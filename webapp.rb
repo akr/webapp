@@ -163,6 +163,18 @@ class WebApp
   end
 
   # call-seq:
+  #   send_resource(path)
+  #   send_resource(path, content_type)
+  #
+  # send the resource indicated by _path_ to the client.
+  def send_resource(path, content_type=nil)
+    self.content_type = content_type if content_type
+    open_resource(path) {|f|
+      @response_body << f.read
+    }
+  end
+
+  # call-seq:
   #   reluri(:script=>string, :path_info=>string, :query=>query, :fragment=>string) -> URI
   #   make_relative_uri(:script=>string, :path_info=>string, :query=>query, :fragment=>string) -> URI
   # 
