@@ -39,60 +39,68 @@ require 'stringio'
 module WebApp
   # CGI
   def WebApp.run_cgi # :nodoc:
-    req = Request.new
-    res = Response.new
-    trap_exception(req, res) {
+    setup_request = lambda {|req|
       req.make_request_header_from_cgi_env(ENV)
       if ENV.include?('CONTENT_LENGTH')
         len = ENV['CONTENT_LENGTH'].to_i
         req.body_object << $stdin.read(len)
       end
-      req.freeze
-      yield req, res
     }
-    res.output_cgi_status_field($stdout)
-    res.output_message($stdout)
+    output_response = lambda {|res|
+      res.output_cgi_status_field($stdout)
+      res.output_message($stdout)
+    }
+    primitive_run(setup_request, output_response) {|req, res| yield req, res }
   end
 
   # FastCGI
   def WebApp.run_fcgi # :nodoc:
     require 'fcgi'
     FCGI.each_request {|fcgi_request|
-      req = Request.new
-      res = Response.new
-      trap_exception(req, res) {
+      setup_request = lambda {|req|
         req.make_request_header_from_cgi_env(fcgi_request.env)
         if content = fcgi_request.in.read
           req.body_object << content
         end
-        req.freeze
-        yield req, res
       }
-      res.output_cgi_status_field(fcgi_request.out)
-      res.output_message(fcgi_request.out)
-      fcgi_request.finish
+      output_response =  lambda {|res|
+        res.output_cgi_status_field(fcgi_request.out)
+        res.output_message(fcgi_request.out)
+        fcgi_request.finish
+      }
+      primitive_run(setup_request, output_response) {|req, res| yield req, res }
     }
   end
 
   # mod_ruby
   def WebApp.run_rbx # :nodoc:
     rbx_request = Apache.request
-    req = Request.new
-    res = Response.new
-    trap_exception(req, res) {
+    setup_request = lambda {|req|
       req.make_request_header_from_cgi_env(rbx_request.subprocess_env)
       if content = rbx_request.read
         req.body_object << content
       end
+    }
+    output_response =  lambda {|res|
+      res.output_cgi_status_field($stdout)
+      rbx_request.status_line = "#{res.status_line}"
+      res.header_object.each {|k, v|
+        rbx_request.headers_out[k] = v
+      }
+      rbx_request.write res.body_object.string
+    }
+    primitive_run(setup_request, output_response) {|req, res| yield req, res }
+  end
+
+  def WebApp.primitive_run(setup_request, output_response) # :nodoc:
+    req = Request.new
+    res = Response.new
+    trap_exception(req, res) {
+      setup_request.call(req)
       req.freeze
       yield req, res
     }
-    res.output_cgi_status_field($stdout)
-    rbx_request.status_line = "#{res.status_line}"
-    res.header_object.each {|k, v|
-      rbx_request.headers_out[k] = v
-    }
-    rbx_request.write res.body_object.string
+    output_response.call(res)
   end
 
   def WebApp.trap_exception(req, res) # :nodoc:

@@ -42,7 +42,7 @@ def list_tables(req, out)
       <div _iter="foreach_table//table_name,numrecords">
         <tr><td><a _attr_href='req.make_relative_uri(:path_info=>"/table/#{table_name}")'
                    _text=table_name>table entry
-            <td _text=numrecords>
+            <td _text=numrecords># of records
       </div>
     </table>
   </body>
