@@ -30,8 +30,8 @@ End
   }
 end
 
-def list_tables(req, out)
-  HTree.expand_template(out) {<<'End'}
+def list_tables(req, res)
+  HTree.expand_template(res) {<<'End'}
 <html>
   <head>
     <title>table list of SQLite</title>
@@ -74,11 +74,11 @@ End
   end
 end
 
-def show_table(req, out, table_name, beg=0, num=100)
+def show_table(req, res, table_name, beg=0, num=100)
   beg = 0 if beg < 0
   num = 100 if 100 < num
   num = 1 if num < 1
-  HTree.expand_template(out) {<<'End'}
+  HTree.expand_template(res) {<<'End'}
 <html>
   <head>
     <title>table content of SQLite</title>
@@ -116,12 +116,11 @@ WebApp {|request, response|
   end
 
   response.header_object.set 'Content-Type', 'text/html'
-  out = response.body_object
 
   _, command, *args = request.path_info.split(%r{/})
   case command
   when nil, ''
-    list_tables(request, out)
+    list_tables(request, response)
   when 'table'
     table, range, = args
     beg = 0
@@ -134,7 +133,7 @@ WebApp {|request, response|
       beg = $1.to_i
       num = 100
     end
-    show_table(request, out, table, beg, num)
+    show_table(request, response, table, beg, num)
   else
     raise "unexpected command: #{command}"
   end

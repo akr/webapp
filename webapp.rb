@@ -11,8 +11,7 @@
 #  
 #   WebApp {|request, response|
 #     response.header_object.set 'Content-Type', 'text/plain'
-#     body = response.body_object
-#     body.puts <<"End"
+#     response.puts <<"End"
 #   current time: #{Time.now}
 #   pid: #{$$}
 #   
@@ -29,12 +28,13 @@
 #   --- request headers ---
 #   End
 #     request.header_object.each {|k, v|
-#       body.puts "#{k}: #{v}"
+#       response.puts "#{k}: #{v}"
 #     }
 #   }
 #
 
 require 'stringio'
+require 'forwardable'
 
 module WebApp
   # CGI
@@ -43,7 +43,7 @@ module WebApp
       req.make_request_header_from_cgi_env(ENV)
       if ENV.include?('CONTENT_LENGTH')
         len = ENV['CONTENT_LENGTH'].to_i
-        req.body_object << $stdin.read(len)
+        req << $stdin.read(len)
       end
     }
     output_response = lambda {|res|
@@ -60,7 +60,7 @@ module WebApp
       setup_request = lambda {|req|
         req.make_request_header_from_cgi_env(fcgi_request.env)
         if content = fcgi_request.in.read
-          req.body_object << content
+          req << content
         end
       }
       output_response =  lambda {|res|
@@ -78,7 +78,7 @@ module WebApp
     setup_request = lambda {|req|
       req.make_request_header_from_cgi_env(rbx_request.subprocess_env)
       if content = rbx_request.read
-        req.body_object << content
+        req << content
       end
     }
     output_response =  lambda {|res|
@@ -87,7 +87,8 @@ module WebApp
       res.header_object.each {|k, v|
         rbx_request.headers_out[k] = v
       }
-      rbx_request.write res.body_object.string
+      res.rewind
+      rbx_request.write res.read
     }
     primitive_run(setup_request, output_response) {|req, res| yield req, res }
   end
@@ -110,9 +111,9 @@ module WebApp
       res.status_line = '500 Internal Server Error'
       res.header_object.clear
       res.header_object.add 'Content-Type', 'text/plain'
-      res.body_object.truncate(0)
-      res.body_object.print "#{e.message} (#{e.class})\n"
-      e.backtrace.each {|f| res.body_object.puts f }
+      res.truncate(0)
+      res.puts "#{e.message} (#{e.class})"
+      e.backtrace.each {|f| res.puts f }
     end
   end
 
@@ -284,7 +285,7 @@ module WebApp
       raise ArgumentError, "unexpected body: #{body.inspect}" unless body.respond_to? :to_str
       @body_object = StringIO.new(body.to_str)
     end
-    attr_reader :body_object, :header_object
+    attr_reader :header_object
 
     def freeze # :nodoc:
       @header_object.freeze
@@ -303,6 +304,15 @@ module WebApp
       out << @body_object.string
     end
 
+    extend Forwardable
+    def_delegators :@body_object,
+      :<<,
+      :each, :each_line, :each_byte, :eof, :eof?,
+      :getc, :gets, :pos, :tell, :pos=,
+      :print, :printf, :putc, :puts,
+      :read, :readchar, :readline, :readlines,
+      :rewind, :seek, :ungetc, :write,
+      :truncate
   end
 
   class Request < Message
