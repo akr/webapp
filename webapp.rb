@@ -153,6 +153,9 @@ class WebApp
   # If /home/user/public_html/foo/bar.cgi is a web application which
   # WebApp {} calls, webapp.resource_path("baz") returns a pathname points to
   # /home/user/public_html/foo/baz.
+  #
+  # _path_ must not have ".." component and must not be absolute.
+  # Otherwise ArgumentError is raised.
   def resource_path(arg)
     path = Pathname.new(arg)
     raise ArgumentError, "absolute path: #{arg.inspect}" if !path.relative?
