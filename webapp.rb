@@ -67,7 +67,7 @@ class WebApp
   def_delegator :@response_header, :set, :set_header
   def_delegator :@response_header, :add, :add_header
   def_delegator :@response_header, :clear, :clear_header
-  def_delegator :@response_header, :get, :get_header
+  def_delegator :@response_header, :[], :get_header
   def_delegator :@response_header, :each, :each_header
 
   def content_type=(media_type)
@@ -118,7 +118,94 @@ class WebApp
     @requri.make_relative_uri(hash)
   end
 
+  def query_html_application_x_www_form_urlencoded_get
+    HTMLFormQuery.decode_x_www_form_urlencoded(@request.query_string)
+  end
+
+  def query_html_application_x_www_form_urlencoded_post
+    if /\Apost\z/i =~ @request.request_method
+      HTMLFormQuery.decode_x_www_form_urlencoded(@request.body_object.read)
+    else
+      # xxx: warning?
+      HTMLFormQuery.new
+    end
+  end
+
+  class HTMLFormQuery
+    def HTMLFormQuery.decode_x_www_form_urlencoded(encoded_string)
+      # xxx: warning if invalid format?
+      pairs = []
+      encoded_string.scan(/([^&;=]*)=([^&;]*)/) {|key, val|
+        key.gsub!(/\+/, ' ')
+        key.gsub!(/%([0-9A-F][0-9A-F])/i) { [$1].pack("H*") }
+        val.gsub!(/\+/, ' ')
+        val.gsub!(/%([0-9A-F][0-9A-F])/i) { [$1].pack("H*") }
+        pairs << [key.freeze, val.freeze]
+      }
+      HTMLFormQuery.new(pairs)
+    end
+
+    def HTMLFormQuery.each_string_key_pair(arg, &block) # :nodoc:
+      if arg.respond_to? :to_ary
+        arg = arg.to_ary
+        if arg.length == 2 && arg.first.respond_to?(:to_str)
+          yield WebApp.make_frozen_string(arg.first), arg.last
+        else
+          arg.each {|elt|
+            HTMLFormQuery.each_string_key_pair(elt, &block)
+          }
+        end
+      elsif arg.respond_to? :to_pair
+        arg.each_pair {|key, val|
+          yield WebApp.make_frozen_string(key), val
+        }
+      else
+        raise ArgumentError, "non-pairs argument: #{arg.inspect}"
+      end
+    end
+
+    def initialize(*args)
+      @param = []
+      HTMLFormQuery.each_string_key_pair(args) {|key, val|
+        @param << [key, val]
+      }
+      @param.freeze
+    end
+
+    def each
+      @param.each {|key, val|
+        yield key.dup, val.dup
+      }
+    end
+
+    def [](key)
+      if pair = @param.assoc(key)
+        return pair.last.dup
+      end
+      return nil
+    end
+
+    def lookup_all(key)
+      result = []
+      @param.each {|k, val|
+        result << val if k == key
+      }
+      return result
+    end
+
+    def keys
+      @param.map {|key, val| key }.uniq
+    end
+  end
+
   # :stopdoc:
+  def WebApp.make_frozen_string(str)
+    raise ArgumentError, "not a string: #{str.inspect}" unless str.respond_to? :to_str
+    str = str.to_str
+    str = str.dup.freeze unless str.frozen?
+    str
+  end
+
   class Manager
     def initialize(app_class, app_block)
       @app_class = app_class
@@ -131,7 +218,7 @@ class WebApp
         req.make_request_header_from_cgi_env(ENV)
         if ENV.include?('CONTENT_LENGTH')
           len = ENV['CONTENT_LENGTH'].to_i
-          req << $stdin.read(len)
+          req.body_object << $stdin.read(len)
         end
       }
       output_response = lambda {|res|
@@ -148,7 +235,7 @@ class WebApp
         setup_request = lambda {|req|
           req.make_request_header_from_cgi_env(fcgi_request.env)
           if content = fcgi_request.in.read
-            req << content
+            req.body_object << content
           end
         }
         output_response =  lambda {|res|
@@ -166,7 +253,7 @@ class WebApp
       setup_request = lambda {|req|
         req.make_request_header_from_cgi_env(rbx_request.subprocess_env)
         if content = rbx_request.read
-          req << content
+          req.body_object << content
         end
       }
       output_response =  lambda {|res|
@@ -186,6 +273,7 @@ class WebApp
       trap_exception(req, res) {
         setup_request.call(req)
         req.freeze
+        req.body_object.rewind
         webapp = WebApp.new(req, res)
         app = @app_class.new
         if @app_block
@@ -311,21 +399,14 @@ class WebApp
       nil
     end
 
-    def make_frozen_string(str)
-      raise ArgumentError, "not a string: #{str.inspect}" unless str.respond_to? :to_str
-      str = str.to_str
-      str = str.dup.freeze unless str.frozen?
-      str
-    end
-
     def add(field_name, field_body)
-      field_name = make_frozen_string(field_name)
-      field_body = make_frozen_string(field_body)
+      field_name = WebApp.make_frozen_string(field_name)
+      field_body = WebApp.make_frozen_string(field_body)
       @fields << [field_name.downcase.freeze, field_name, field_body]
     end
 
     def set(field_name, field_body)
-      field_name = make_frozen_string(field_name)
+      field_name = WebApp.make_frozen_string(field_name)
       remove(field_name)
       add(field_name, field_body)
     end
