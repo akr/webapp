@@ -44,7 +44,7 @@ module WebApp
     trap_exception(req, res) {
       req.make_request_header_from_cgi_env(ENV)
       if ENV.include?('CONTENT_LENGTH')
-        len = env['CONTENT_LENGTH'].to_i
+        len = ENV['CONTENT_LENGTH'].to_i
         req.body_object << $stdin.read(len)
       end
       req.freeze
@@ -105,6 +105,82 @@ module WebApp
       res.body_object.truncate(0)
       res.body_object.print "#{e.message} (#{e.class})\n"
       e.backtrace.each {|f| res.body_object.puts f }
+    end
+  end
+
+  class ReqURI
+    def initialize(script_name, path_info)
+      @script_name = script_name
+      @path_info = path_info
+    end
+
+    def make_relative_uri(hash)
+      script = hash[:script]
+      path_info = hash[:path_info]
+      #query = hash[:query]
+      fragment = hash[:fragment]
+
+      if !script
+        script = @script_name
+      elsif %r{\A/} !~ script
+        script = @script_name.sub(%r{[^/]*\z}) { script }
+        while script.sub!(%r{/[^/]*/\.\.(?=/|\z)}, '')
+        end
+        script.sub!(%r{\A/\.\.(?=/|\z)}, '')
+      end
+
+      path_info = '/' + path_info if %r{\A[^/]} =~ path_info
+
+      dst = "#{script}#{path_info}"
+      dst.sub!(%r{\A/}, '')
+      dst.sub!(%r{[^/]*\z}, '')
+      dst_basename = $&
+
+      src = "#{@script_name}#{@path_info}"
+      src.sub!(%r{\A/}, '')
+      src.sub!(%r{[^/]*\z}, '')
+
+      while src[%r{\A[^/]*/}] == dst[%r{\A[^/]*/}]
+        if $~
+          src.sub!(%r{\A[^/]*/}, '')
+          dst.sub!(%r{\A[^/]*/}, '')
+        else
+          break
+        end
+      end
+
+      rel_path = '../' * src.count('/')
+      rel_path << dst << dst_basename
+      rel_path = './' if rel_path.empty?
+
+      rel_path.gsub!(%r{[^/]+}) {|segment| pchar_escape(segment) }
+
+      if fragment
+        fragment = "#" + uric_escape(fragment)
+      else
+        fragment = ''
+      end
+
+      #rel_path + query + fragment
+      rel_path + fragment
+    end
+
+    private
+
+    Alpha = 'a-zA-Z'
+    Digit = '0-9'
+    AlphaNum = Alpha + Digit
+    Mark = '\-_.!~*\'()'
+    Unreserved = AlphaNum + Mark
+    PChar = Unreserved + ':@&=+$,'
+    def pchar_escape(s)
+      s.gsub(/[^#{PChar}]/on) {|c| sprintf("%%%02X", c[0]) }
+    end
+
+    Reserved = ';/?:@&=+$,'
+    Uric = Reserved + Unreserved
+    def uric_escape(s)
+      s.gsub(/[^#{Uric}]/on) {|c| sprintf("%%%02X", c[0]) }
     end
   end
 
@@ -249,6 +325,15 @@ module WebApp
       @server_protocol = env['SERVER_PROTOCOL'] || ''
       @remote_addr = env['REMOTE_ADDR'] || ''
       @content_type = env['CONTENT_TYPE'] || ''
+
+      # non-standard:
+      @request_uri = env['REQUEST_URI'] # Apache
+
+      @requri = ReqURI.new(@script_name, @path_info)
+    end
+
+    def make_relative_uri(hash)
+      @requri.make_relative_uri(hash)
     end
   end
 
