@@ -104,13 +104,20 @@ class WebApp
       super
     end
 
-    def output_message(out)
-      content = @body_object.length
+    def output_header(out)
       @header_object.each {|k, v|
         out << "#{k}: #{v}\n"
       }
-      out << "\n"
+    end
+
+    def output_body(out)
       out << @body_object.string
+    end
+
+    def output_message(out)
+      output_header(out)
+      out << "\n"
+      output_body(out)
     end
   end
 

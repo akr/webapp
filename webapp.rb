@@ -405,38 +405,6 @@ class WebApp
     end
     attr_reader :resource_basedir
 
-    # Test
-    def run_test
-      setup_request = lambda {|req|
-        if ARGV.empty?
-          path_info = ''
-          query_string = ''
-        elsif %r{\A/} =~ ARGV[0]
-          path_info = ARGV[0]
-          query_string = ARGV[1..-1].join('&')
-        else
-          path_info = ''
-          query_string = ARGV.join('&')
-        end
-        req.make_request_header_from_cgi_env({
-          'REQUEST_METHOD' => 'GET',
-          'SERVER_NAME' => 'localhost',
-          'SERVER_PORT' => 80,
-          'SCRIPT_NAME' => "/#{File.basename($0)}",
-          'PATH_INFO' => path_info,
-          'QUERY_STRING' => query_string,
-          'SERVER_PROTOCOL' => 'HTTP/1.0',
-          'REMOTE_ADDR' => '127.0.0.1',
-          'CONTENT_TYPE' => ''
-        })
-      }
-      output_response = lambda {|res|
-        res.output_cgi_status_field($stdout)
-        res.output_message($stdout)
-      }
-      primitive_run(setup_request, output_response)
-    end
-
     # CGI, Esehttpd
     def run_cgi
       setup_request = lambda {|req|
@@ -670,7 +638,8 @@ def WebApp(&block) # :yields: webapp
   elsif ENV.include?('REQUEST_METHOD')
     run = lambda { manager.run_cgi }
   else
-    run = lambda { manager.run_test }
+    require 'webapp/cli'
+    run = lambda { manager.run_cli }
   end
   if Thread.current[:webapp_delay]
     Thread.current[:webapp_proc] = run
