@@ -27,12 +27,12 @@ module WebApp
       req.make_request_header_from_cgi_env(ENV)
       if ENV.include?('CONTENT_LENGTH')
         len = env['CONTENT_LENGTH'].to_i
-        req.body_object << STDIN.read(len)
+        req.body_object << $stdin.read(len)
       end
       yield req, res
     }
-    res.output_cgi_status_field(STDOUT)
-    res.output_message(STDOUT)
+    res.output_cgi_status_field($stdout)
+    res.output_message($stdout)
   end
 
   def WebApp.run_fcgi # FastCGI
@@ -64,7 +64,7 @@ module WebApp
       end
       yield req, res
     }
-    res.output_cgi_status_field(STDOUT)
+    res.output_cgi_status_field($stdout)
     rbx_request.status_line = "#{res.status_line}"
     res.header_object.each {|k, v|
       rbx_request.headers_out[k] = v
@@ -210,7 +210,7 @@ def WebApp(&block)
   $SAFE = 1 if $SAFE < 1
   if defined?(Apache::Request) && Apache.request.kind_of?(Apache::Request)
     WebApp.run_rbx(&block)
-  elsif STDIN.stat.socket?
+  elsif $stdin.respond_to?(:stat) && $stdin.stat.socket?
     WebApp.run_fcgi(&block)
   elsif ENV.include?('REQUEST_METHOD')
     WebApp.run_cgi(&block)
