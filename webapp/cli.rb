@@ -7,10 +7,18 @@ class WebApp
     def run_cli
       opt_output = '-'
       opt_cern_meta = false
+      opt_server_name = 'localhost'
+      opt_server_port = 80
+      opt_script_name = "/#{File.basename($0)}"
+      opt_remote_addr = '127.0.0.1'
       ARGV.options {|q|
         q.banner = "#{File.basename $0} [options] /path_info ?query_string"
         q.def_option('-o FILE', '--output=FILE', 'set output file') {|arg| opt_output = arg.untaint }
         q.def_option('--cern-meta', 'output header as CERN httpd metafile') { opt_cern_meta = true }
+        q.def_option('--server-name=STRING', 'set server name') {|arg| opt_server_name = arg }
+        q.def_option('--server-port=INTEGER', 'set server port number') {|arg| opt_server_port = arg.to_i }
+        q.def_option('--script-name=STRING', 'set script name') {|arg| opt_script_name = arg }
+        q.def_option('--remote-addr=STRING', 'set remote IP address') {|arg| opt_remote_addr = arg }
         q.parse!
       }
       if path_info = ARGV.shift
@@ -33,13 +41,13 @@ class WebApp
       setup_request = lambda {|req|
         req.make_request_header_from_cgi_env({
           'REQUEST_METHOD' => 'GET',
-          'SERVER_NAME' => 'localhost',
-          'SERVER_PORT' => 80,
-          'SCRIPT_NAME' => "/#{File.basename($0)}",
+          'SERVER_NAME' => opt_server_name,
+          'SERVER_PORT' => opt_server_port,
+          'SCRIPT_NAME' => opt_script_name,
           'PATH_INFO' => path_info,
           'QUERY_STRING' => query_string,
           'SERVER_PROTOCOL' => 'HTTP/1.0',
-          'REMOTE_ADDR' => '127.0.0.1',
+          'REMOTE_ADDR' => opt_remote_addr,
           'CONTENT_TYPE' => ''
         })
       }
