@@ -33,19 +33,17 @@ if $0 == __FILE__
   port = 10080
   ARGV.options {|q|
     q.def_option('--help', 'show this message') {puts q; exit(0)}
-    q.def_option('--port=portnum', 'specify server port') {|num| port = num.to_i }
+    q.def_option('--port=portnum', 'specify server port (default: 10080)') {|num| port = num.to_i }
     q.parse!
   }
   docroot = ARGV.shift || Dir.getwd
+  httpd = WEBrick::HTTPServer.new(:Port => port)
+  trap(:INT){ httpd.shutdown }
   if File.directory? docroot
-    httpd = WEBrick::HTTPServer.new(:DocumentRoot => docroot, :Port => port)
-    trap(:INT){ httpd.shutdown }
+    httpd.mount("/", WEBrick::HTTPServlet::FileHandler, docroot, WEBrick::Config::HTTP[:DocumentRootOptions])
     httpd.start
   else
-    servlet = WebApp::WEBrickServletHandler.load_servlet(docroot)
-    httpd = WEBrick::HTTPServer.new(:Port => port)
-    trap(:INT){ httpd.shutdown }
-    httpd.mount("/", servlet)
+    httpd.mount("/", WebApp::WEBrickServletHandler.load_servlet(docroot))
     httpd.start
   end
 end
