@@ -11,6 +11,7 @@ class WebApp
       opt_server_port = 80
       opt_script_name = "/#{File.basename($0)}"
       opt_remote_addr = '127.0.0.1'
+      opt_headers = []
       ARGV.options {|q|
         q.banner = "#{File.basename $0} [options] [/path_info] [?query_string]"
         q.def_option('-h', '--help', 'show this message') { puts q; exit(0) }
@@ -20,6 +21,7 @@ class WebApp
         q.def_option('--server-port=INTEGER', 'set server port number') {|arg| opt_server_port = arg.to_i }
         q.def_option('--script-name=STRING', 'set script name') {|arg| opt_script_name = arg }
         q.def_option('--remote-addr=STRING', 'set remote IP address') {|arg| opt_remote_addr = arg }
+        q.def_option('--header=NAME:BODY', 'set additional request header') {|arg| opt_headers << arg.split(/:/, 2) }
         q.parse!
       }
       if path_info = ARGV.shift
@@ -51,6 +53,9 @@ class WebApp
           'REMOTE_ADDR' => opt_remote_addr,
           'CONTENT_TYPE' => ''
         })
+        opt_headers.each {|name, body|
+          req.header_object.add name, body
+        }
       }
       output_response = lambda {|res|
         if opt_output == '-'

@@ -16,6 +16,7 @@
 #   (URL will be http://host/path_info?query.
 #   No path component to specify a web application.)
 #   link:files/webapp/webrick-servlet_rb.html
+# * the response is gzipped automatically if the browser accepts.
 #
 # == Example
 #
@@ -30,7 +31,6 @@
 #   require 'webapp'
 #  
 #   WebApp {|webapp|
-#     webapp.content_type = 'text/plain'
 #     webapp.puts <<"End"
 #   current time: #{Time.now}
 #   pid: #{$$}
@@ -494,12 +494,12 @@ class WebApp
         req.body_object.rewind
         webapp = WebApp.new(self, req, res)
         @app_block.call(webapp)
-        complete_response(res)
+        complete_response(webapp, res)
       }
       output_response.call(res)
     end
 
-    def complete_response(res)
+    def complete_response(webapp, res)
       unless res.header_object.has? 'Content-Type'
         case res.body_object.string
         when /\A\z/
@@ -523,8 +523,26 @@ class WebApp
         end
         res.header_object.set 'Content-Type', content_type if content_type
       end
+      gzip_content(webapp, res)
       unless res.header_object.has? 'Content-Length'
         res.header_object.set 'Content-Length', res.body_object.length.to_s
+      end
+    end
+
+    def gzip_content(webapp, res, level=nil)
+      # xxx: parse the Accept-Encoding field body
+      if accept_encoding = webapp.get_request_header('Accept-Encoding') and
+         /gzip/ =~ accept_encoding
+        require 'zlib'
+        level ||= Zlib::DEFAULT_COMPRESSION
+        content = res.body_object.string
+        Zlib::GzipWriter.wrap(StringIO.new(gzipped = ''), level) {|gz|
+          gz << content
+        }
+        if gzipped.length < content.length
+          content.replace gzipped
+          res.header_object.set 'Content-Encoding', 'gzip'
+        end
       end
     end
 
