@@ -461,8 +461,8 @@ end
 # error.log.
 # The developper hosts are specified by the environment variable 
 # WEBAPP_DEVELOP_HOST.
-# It may be an IP address such as "111.222.333.444" or
-# an network address such as "111.222.333.0/24".
+# It may be an IP address in dotted-decimal format such as "192.168.1.200" or
+# an network address such as "192.168.1.200/24".
 # (An environment variable for CGI can be set by SetEnv directive in Apache.)
 #
 def WebApp(&block) # :yields: webapp
