@@ -91,6 +91,17 @@
 #   Content-Length: 16
 #
 #   www.example.org
+#
+# The option --header specifies an additional request header.
+# For example, specifying "Accept-Encoding: gzip" makes output gzipped.
+#
+#   % ruby -rwebapp -e 'WebApp {|w| w.puts "Hello"*100 }' -- --header='Accept-Encoding: gzip'|cat -v 
+#   Status: 200 OK
+#   Content-Type: text/plain
+#   Content-Encoding: gzip
+#   Content-Length: 31
+#
+#   ^_M-^K^H^@^O^VM-TA^@^CM-sHM-MM-IM-IM-w^X%F^RM-A^E^@ZTsDM-u^A^@^@
 
 require 'optparse'
 
