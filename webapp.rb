@@ -258,6 +258,11 @@ End
   end
   alias reluri make_relative_uri
 
+  # calls WebApp#reluri using the webapp object currently processing. 
+  def WebApp.reluri(hash={})
+    WebApp.get_thread_webapp_object.reluri(hash)
+  end
+
   # call-seq:
   #   make_absolute_uri(:script=>string, :path_info=>string, :query=>query, :fragment=>string) -> URI
   # 

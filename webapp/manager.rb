@@ -102,10 +102,29 @@ class WebApp
         req.freeze
         req.body_object.rewind
         webapp = WebApp.new(self, req, res)
-        @app_block.call(webapp)
+        WebApp.with_thread_webapp_object(webapp) {
+          @app_block.call(webapp)
+        }
         complete_response(webapp, res)
       }
       output_response.call(res)
+    end
+
+    def WebApp.with_thread_webapp_object(webapp)
+      begin
+        Thread.current[:webapp_object] = webapp
+        yield
+      ensure
+        Thread.current[:webapp_object] = nil
+      end
+    end
+
+    def WebApp.get_thread_webapp_object
+      webapp = Thread.current[:webapp_object]
+      unless webapp
+        raise "no webapp object in the thread"
+      end
+      webapp
     end
 
     def complete_response(webapp, res)
