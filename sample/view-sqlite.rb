@@ -17,11 +17,17 @@ def quote(str)
 end
 
 def foreach_table
-  sqlite.execute(<<'End') {|row| yield row['name'] }
+  tables = []
+  sqlite.execute(<<'End') {|row| tables << [row['name']] }
 SELECT name FROM sqlite_master
 WHERE type IN ('table','view')
 ORDER BY 1
 End
+  tables.each {|name,|
+    yield name, sqlite.get_first_value(<<"End") || 0
+SELECT max(_ROWID_) FROM #{name}
+End
+  }
 end
 
 def list_tables(req, out)
@@ -32,10 +38,11 @@ def list_tables(req, out)
   </head>
   <body>
     <table border=1>
-      <tr><th>table name
-      <div _iter="foreach_table//table_name">
+      <tr><th>name<th>records
+      <div _iter="foreach_table//table_name,numrecords">
         <tr><td><a _attr_href='req.make_relative_uri(:path_info=>"/table/#{table_name}")'
                    _text=table_name>table entry
+            <td _text=numrecords>
       </div>
     </table>
   </body>
