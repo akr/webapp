@@ -124,7 +124,8 @@ class WebApp
 
   def query_html_post_application_x_www_form_urlencoded
     if /\Apost\z/i =~ @request.request_method # xxx: should be checkless?
-      QueryString.new(@request.body_object.read).decode_as_application_x_www_form_urlencoded
+      q = QueryString.primitive_new_for_raw_query_string(@request.body_object.read)
+      q.decode_as_application_x_www_form_urlencoded
     else
       # xxx: warning?
       HTMLFormQuery.new
@@ -133,6 +134,11 @@ class WebApp
 
   # QueryString represents a query component of URI.
   class QueryString
+    class << self
+      alias primitive_new_for_raw_query_string new
+      undef new
+    end
+
     def initialize(escaped_query_string)
       @escaped_query_string = escaped_query_string
     end
@@ -511,7 +517,7 @@ class WebApp
       @server_port = env['SERVER_PORT'].to_i
       @script_name = env['SCRIPT_NAME'] || ''
       @path_info = env['PATH_INFO'] || ''
-      @query_string = QueryString.new(env['QUERY_STRING'] || '')
+      @query_string = QueryString.primitive_new_for_raw_query_string(env['QUERY_STRING'] || '')
       @server_protocol = env['SERVER_PROTOCOL'] || ''
       @remote_addr = env['REMOTE_ADDR'] || ''
       @content_type = env['CONTENT_TYPE'] || ''
