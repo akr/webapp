@@ -12,8 +12,9 @@ Template = <<'End'
     <form _attr_action="webapp.make_relative_uri">
       Menu:
       <select name=menu multiple>
-        <option selected>fish</option>
-        <option>meet</option>
+        <option selected>mizuyoukan</option>
+        <option>anmitsu</option>
+        <option>azukiyose</option>
       </select>
       <input type=hidden name=form_submitted value=yes>
       <input type=submit>

@@ -26,7 +26,7 @@ WEBrick::HTTPServlet::FileHandler.add_handler('webrick',
   WebApp::WEBrickServletHandler)
 
 if $0 == __FILE__
-  httpd = WEBrick::HTTPServer.new(:DocumentRoot => ".", :Port => 10080)
+  httpd = WEBrick::HTTPServer.new(:DocumentRoot => Dir.getwd, :Port => 10080)
   trap(:INT){ httpd.shutdown }
   httpd.start
 end

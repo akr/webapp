@@ -45,7 +45,7 @@ The script also works under WEBrick based server such as follows.
 In this case, the script filename should be "hello.webrick".
 
   require 'webapp/webrick-servlet'
-  httpd = WEBrick::HTTPServer.new(:DocumentRoot => ".", :Port => 10080)
+  httpd = WEBrick::HTTPServer.new(:DocumentRoot => Dir.getwd, :Port => 10080)
   trap(:INT){ httpd.shutdown }
   httpd.start 
 
