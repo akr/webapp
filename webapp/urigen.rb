@@ -14,6 +14,7 @@ class WebApp
       uri << path_info.gsub(%r{[^/]+}) {|segment| pchar_escape(segment) }
       @base_uri = URI.parse(uri)
     end
+    attr_reader :base_uri
 
     def make_relative_uri(hash)
       script = hash[:script]

@@ -81,7 +81,9 @@ class WebApp
     @response = response
     @response_header = response.header_object
     @response_body = response.body_object
-    @urigen = URIGen.new('http', @request.server_name, @request.server_port, @request.script_name, @request.path_info)
+    @urigen = URIGen.new('http', # xxx: https?
+      @request.server_name, @request.server_port,
+      @request.script_name, @request.path_info)
   end
 
   extend Forwardable
@@ -119,8 +121,9 @@ class WebApp
   # _path_ is interpreted as a relative path from the directory
   # which a web application exists.
   #
-  # If /foo/bar/baz.cgi is a web application which WebApp {} calls,
-  # webapp.resource_path("qux") returns a pathname points to /foo/bar/qux.
+  # If /home/user/public_html/foo/bar.cgi is a web application which
+  # WebApp {} calls, webapp.resource_path("baz") returns a pathname points to
+  # /home/user/public_html/foo/baz.
   def resource_path(path)
     @manager.resource_basedir + path
   end
@@ -135,8 +138,8 @@ class WebApp
   end
 
   # call-seq:
-  #   make_relative_uri(:script=>string, :path_info=>string, :query=>query, :fragment=>string) -> URI
   #   reluri(:script=>string, :path_info=>string, :query=>query, :fragment=>string) -> URI
+  #   make_relative_uri(:script=>string, :path_info=>string, :query=>query, :fragment=>string) -> URI
   # 
   # make_relative_uri returns a relative URI which base URI is the URI the
   # web application is invoked.
@@ -179,8 +182,100 @@ class WebApp
   end
   alias reluri make_relative_uri
 
+  # call-seq:
+  #   make_absolute_uri(:script=>string, :path_info=>string, :query=>query, :fragment=>string) -> URI
+  # 
+  # make_absolute_uri returns a absolute URI which base URI is the URI of the
+  # web application is invoked.
+  #
+  # The argument is same as make_relative_uri.
   def make_absolute_uri(hash={})
     @urigen.make_absolute_uri(hash)
+  end
+
+  StatusMessage = { # RFC 2616
+    100 => 'Continue',
+    101 => 'Switching Protocols',
+    200 => 'OK',
+    201 => 'Created',
+    202 => 'Accepted',
+    203 => 'Non-Authoritative Information',
+    204 => 'No Content',
+    205 => 'Reset Content',
+    206 => 'Partial Content',
+    300 => 'Multiple Choices',
+    301 => 'Moved Permanently',
+    302 => 'Found',
+    303 => 'See Other',
+    304 => 'Not Modified',
+    305 => 'Use Proxy',
+    307 => 'Temporary Redirect',
+    400 => 'Bad Request',
+    401 => 'Unauthorized',
+    402 => 'Payment Required',
+    403 => 'Forbidden',
+    404 => 'Not Found',
+    405 => 'Method Not Allowed',
+    406 => 'Not Acceptable',
+    407 => 'Proxy Authentication Required',
+    408 => 'Request Timeout',
+    409 => 'Conflict',
+    410 => 'Gone',
+    411 => 'Length Required',
+    412 => 'Precondition Failed',
+    413 => 'Request Entity Too Large',
+    414 => 'Request-URI Too Long',
+    415 => 'Unsupported Media Type',
+    416 => 'Requested Range Not Satisfiable',
+    417 => 'Expectation Failed',
+    500 => 'Internal Server Error',
+    501 => 'Not Implemented',
+    502 => 'Bad Gateway',
+    503 => 'Service Unavailable',
+    504 => 'Gateway Timeout',
+    505 => 'HTTP Version Not Supported',
+  }
+
+  # setup_redirect makes a status line and a Location header appropriate as
+  # redirection.
+  #
+  # _status_ specifies the status line.
+  # It should be a Fixnum 3xx or String '3xx ...'.
+  #
+  # _uri_ specifies the Location header body.
+  # It should be a URI, String or Hash.
+  # If a Hash is given, make_absolute_uri is called to convert to URI.
+  # If given URI is relative, it is converted as absolute URI.
+  def setup_redirection(status, uri)
+    case status
+    when Fixnum
+      if status < 300 || 400 <= status
+        raise ArgumentError, "unexpected status: #{status.inspect}"
+      end
+      status = "#{status} #{StatusMessage[status]}"
+    when String
+      unless /\A3\d\d(\z| )/ =~ status
+        raise ArgumentError, "unexpected status: #{status.inspect}"
+      end
+      if status.length == 3
+        status = "#{status} #{StatusMessage[status.to_i]}"
+      end
+    else
+      raise ArgumentError, "unexpected status: #{status.inspect}"
+    end
+    case uri
+    when URI
+      uri = @urigen.base_uri + uri if uri.relative?
+    when String
+      uri = URI.parse(uri)
+      uri = @urigen.base_uri + uri if uri.relative?
+    when Hash
+      uri = make_absolute_uri(uri)
+    else
+      raise ArgumentError, "unexpected uri: #{uri.inspect}"
+    end
+    @response.status_line = status
+    @response_header.set 'Location', uri.to_s
   end
 
   def query_html_get_application_x_www_form_urlencoded
