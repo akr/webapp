@@ -1,14 +1,13 @@
 require 'test/unit'
 require 'webapp'
 
-class RelURITest < Test::Unit::TestCase
+class URIGenTest < Test::Unit::TestCase
   def check_reluri_1(expected, hash)
-    requri = WebApp::ReqURI.new("/foo/bar.cgi", "/baz/qux")
-    assert_equal(expected, requri.make_relative_uri(hash))
+    requri = WebApp::URIGen.new('http', "host", 80, "/foo/bar.cgi", "/baz/qux")
+    assert_equal(expected, requri.make_relative_uri(hash).to_s)
   end
 
   def test_path_info
-    requri = WebApp::ReqURI.new("/foo/bar.cgi", "/baz/qux")
     check_reluri_1("../hoge"              , :path_info=>"/hoge")
     check_reluri_1("fuga"                 , :path_info=>"/baz/fuga")
     check_reluri_1("./"                   , :path_info=>"/baz/")
@@ -24,8 +23,8 @@ class RelURITest < Test::Unit::TestCase
   end
 
   def check_reluri_2(expected, hash)
-    requri = WebApp::ReqURI.new("/foo/bar.cgi", '')
-    assert_equal(expected, requri.make_relative_uri(hash))
+    requri = WebApp::URIGen.new('http', "host", 80, "/foo/bar.cgi", '')
+    assert_equal(expected, requri.make_relative_uri(hash).to_s)
   end
 
   def test_query
@@ -33,5 +32,15 @@ class RelURITest < Test::Unit::TestCase
     check_reluri_2("bar.cgi?a=b", :query=>{'a'=>'b'})
     check_reluri_2("bar.cgi?a=b;a=c", :query=>{'a'=>['b','c']})
     check_reluri_2("bar.cgi?a+b=c+d", :query=>{'a b'=>'c d'})
+  end
+
+  def check_absuri(expected, hash)
+    requri = WebApp::URIGen.new('http', "host", 80, "/foo/bar.cgi", "/baz/qux")
+    assert_equal(expected, requri.make_absolute_uri(hash).to_s)
+  end
+
+  def test_absuri
+    check_absuri("http://host/foo/bar.cgi", {})
+    check_absuri("http://host/foo/bar.cgi/hoge", :path_info=>"/hoge")
   end
 end

@@ -2,6 +2,20 @@ require 'test/unit'
 require 'webapp'
 
 class HTMLFormQueryTest < Test::Unit::TestCase
+  def webapp_test(env, content='', &block)
+    manager = WebApp::Manager.new(Object, block)
+    setup_request = lambda {|req|
+      req.make_request_header_from_cgi_env(env)
+      req.body_object << content
+    }
+    response = nil
+    output_response = lambda {|res|
+      response = res
+    }
+    manager.primitive_run(setup_request, output_response)
+    response
+  end
+
   def d(str)
     q = WebApp::QueryString.primitive_new_for_raw_query_string(str)
     q.decode_as_application_x_www_form_urlencoded
@@ -18,8 +32,6 @@ class HTMLFormQueryTest < Test::Unit::TestCase
   end
 
   def test_extract_html_form
-    webapp = WebApp.new(WebApp::Request.new, WebApp::Response.new)
-
     extract1 = lambda {|form_string|
       WebApp::HTMLFormValidator.allocate.extract_html_form_tree(form_string)
     }
@@ -108,14 +120,30 @@ End
       e.call('<form><button name=n></form>'))
   end
 
+  def query_string_test(query_string, &block)
+    env = {}
+    env['REQUEST_METHOD'] = 'GET'
+    env['SERVER_NAME'] = 'test-servername'
+    env['SERVER_PORT'] = '80'
+    env['SCRIPT_NAME'] = '/test-scriptname'
+    env['PATH_INFO'] = '/test-pathinfo'
+    env['QUERY_STRING'] = query_string
+    env['SERVER_PROTOCOL'] = 'HTTP/1.0'
+    env['REMOTE_ADDR'] = '127.0.0.1'
+    env['CONTENT_TYPE'] = ''
+    webapp_test(env, &block)
+  end
+
   def validate(query_string, form)
-    req = WebApp::Request.new
-    req.make_request_header_from_cgi_env(
-      'REQUEST_METHOD'=>'GET',
-      'QUERY_STRING'=>query_string
-    )
-    webapp = WebApp.new(req, WebApp::Response.new)
-    webapp.validate_html_query(form)
+    exc = nil
+    query_string_test(query_string) {|webapp|
+      begin
+        return webapp.validate_html_query(form)
+      rescue Exception
+        exc = $!
+      end
+    }
+    raise exc
   end
 
   ValFail = WebApp::QueryValidationFailure
