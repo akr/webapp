@@ -75,7 +75,7 @@ module WebApp
     rescue Exception => e
       res.status_line = '500 Internal Server Error'
       res.header_object.clear
-      res.header_object.add 'content-type', 'text/plain'
+      res.header_object.add 'Content-Type', 'text/plain'
       res.body.truncate(0)
       res.body.print "#{e.message} (#{e.class})\n"
       e.backtrace.each {|f| res.body.puts f }
@@ -174,7 +174,8 @@ module WebApp
     def make_request_header_from_cgi_env(env)
       env.each {|k, v|
         next if /\AHTTP_/ !~ k
-        k = $'.downcase
+        k = Header.capitalize_field_name($')
+        k.gsub!(/_/, '-')
         @header.add k, v
       }
       @request_method = env['REQUEST_METHOD']
