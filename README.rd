@@ -9,7 +9,7 @@
 * works as usual command (CLI)
   xxx.cgi [options] [/path_info] [?query_string]
 * path_info aware relative URI generation
-* HTML form parameter varidation by HTML form (sample/query.cgi)
+* HTML form parameter validation by HTML form (sample/query.cgi)
 * automatic Content-Type generation
 * a web application can be used as a web site with WEBrick
   (URL will be http://host/path_info?query.

@@ -68,7 +68,7 @@
 # The header in the response is stored in separated file.
 # Note that the format is suitable for Apache mod_cern_meta.
 #
-#   Z(3):akr@serein% ruby -rwebapp -e 'WebApp {|w| w.puts "Hello" }' -- --cern-meta -o ~/public_html/hello2.txt
+#   % ruby -rwebapp -e 'WebApp {|w| w.puts "Hello" }' -- --cern-meta -o ~/public_html/hello2.txt
 #   % cat ~/public_html/.web/hello2.txt.meta 
 #   Content-Type: text/plain
 #   Content-Length: 6
