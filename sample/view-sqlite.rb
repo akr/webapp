@@ -5,9 +5,6 @@ require "htree" # http://raa.ruby-lang.org/project/htree/
 require "sqlite" # http://raa.ruby-lang.org/project/sqlite-ruby/
 require 'yaml'
 
-config = YAML.load(File.read("#{File.dirname(__FILE__)}/view-sqlite.yml"))
-$db_path = config.fetch('db_path')
-
 def sqlite
   if !defined?($db_conn)
     $db_conn = SQLite::Database.open($db_path)
@@ -106,6 +103,11 @@ End
 end
 
 WebApp {|request, response|
+  unless defined? $config
+    $config = YAML.load(File.read("#{File.dirname(__FILE__)}/view-sqlite.yml"))
+    $db_path = $config.fetch('db_path')
+  end
+
   response.header_object.set 'Content-Type', 'text/html'
   out = response.body_object
 
