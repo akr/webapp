@@ -36,3 +36,4 @@ The script follows works under CGI, FastCGI and mod_ruby without modification.
 == Requirements
 
 * Ruby 1.8
+* htree 0.2

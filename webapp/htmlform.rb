@@ -199,7 +199,9 @@ class WebApp
             has_selected = true if option.get_attr('selected')
             controls << c
           }
-          @select_nonempty << select[:name] if has_selected
+          if has_selected && !select[:multiple]
+            @select_nonempty << select[:name]
+          end
           next
         when /\Atextarea\z/
           c[:elem] = :textarea
