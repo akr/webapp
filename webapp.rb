@@ -337,16 +337,47 @@ class WebApp
       begin
         yield
       rescue Exception => e
-        res.status_line = '500 Internal Server Error'
-        header = res.header_object
-        header.clear
-        header.add 'Content-Type', 'text/plain'
-        body = res.body_object
-        body.rewind
-        body.truncate(0)
-        body.puts "#{e.message} (#{e.class})"
-        e.backtrace.each {|f| body.puts f }
+        if localhost? req.remote_addr
+          generate_debug_page(req, res, e)
+        else
+          generate_error_page(req, res, e)
+        end
       end
+    end
+
+    def localhost?(addr)
+      addr == '127.0.0.1'
+    end
+
+    def generate_error_page(req, res, exc)
+      backtrace = "#{exc.message} (#{exc.class})\n"
+      exc.backtrace.each {|f| backtrace << f << "\n" }
+      $stderr.puts backtrace
+      res.status_line = '500 Internal Server Error'
+      header = res.header_object
+      header.clear
+      body = res.body_object
+      body.rewind
+      body.truncate(0)
+      header.add 'Content-Type', 'text/html'
+      body.puts <<'End'
+<html><head><title>500 Internal Server Error</title></head>
+<body><h1>500 Internal Server Error</h1>
+<p>The dynamic page you requested is failed to generate.</p></body>
+End
+    end
+
+    def generate_debug_page(req, res, exc)
+      backtrace = "#{exc.message} (#{exc.class})\n"
+      exc.backtrace.each {|f| backtrace << f << "\n" }
+      res.status_line = '500 Internal Server Error'
+      header = res.header_object
+      header.clear
+      header.add 'Content-Type', 'text/plain'
+      body = res.body_object
+      body.rewind
+      body.truncate(0)
+      body.puts backtrace
     end
   end
 
