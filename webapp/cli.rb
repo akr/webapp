@@ -128,17 +128,12 @@ class WebApp
         q.def_option('--header=NAME:BODY', 'set additional request header') {|arg| opt_headers << arg.split(/:/, 2) }
         q.parse!
       }
-      if path_info = ARGV.shift
-        if %r{\A/} !~ path_info
-          ARGV.unshift path_info
-          path_info = nil
-        end
+      if ARGV[0] && %r{\A/} =~ ARGV[0]
+        path_info = ARGV.shift
       end
-      if query_string = ARGV.shift
-        if %r{\A\?} !~ query_string
-          ARGV.unshift query_string
-          query_string = nil
-        end
+      if ARGV[0] && %r{\A\?} =~ ARGV[0]
+        ARGV.shift
+        query_string = $'
       end
       if !ARGV.empty?
         raise "extra arguments: #{ARGV.inspect[1..-2]}"
