@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+
+require 'rbconfig'
+require 'pathname'
+
+RUBY = "#{Config::CONFIG["bindir"]}/#{Config::CONFIG["ruby_install_name"]}"
+OUTPUT_DIR = "cgi-bin"
+
+Dir.mkdir OUTPUT_DIR unless File.directory? OUTPUT_DIR
+
+ARGV.each {|script_name|
+  script_path = Pathname.new(script_name).realpath
+  open("#{OUTPUT_DIR}/#{script_name}", 'w') {|f|
+    f << <<"End"
+#!#{RUBY}
+
+# This file is auto-generated.  Don't edit.
+
+Dir.chdir #{script_path.dirname.to_s.dump}
+$:.unshift #{script_path.dirname.to_s.dump}
+$:.delete '.'
+load #{script_path.to_s.dump}
+End
+  }
+}
