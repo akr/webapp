@@ -178,6 +178,12 @@ class WebApp
   # Last-Modified: and If-Modified-Since: header is supported.
   def send_resource(path)
     path = resource_path(path)
+    begin
+      mtime = path.mtime
+    rescue Errno::ENOENT
+      @response.status_line = '404 Not Found'
+      return
+    end
     check_last_modified(path.mtime) {
       path.open {|f|
         @response_body << f.read
