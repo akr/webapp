@@ -1,4 +1,3 @@
-require 'webapp'
 require 'webrick'
 
 class WebApp
@@ -8,17 +7,31 @@ class WebApp
       @name = name
     end
 
-    def do_GET(req, res)
-      begin
-        Thread.current[:webapp_webrick] = [req, res]
-        procdure = WebApp.load_webapp_procedure(@name)
-        procdure.call
-      ensure
-        Thread.current[:webapp_webrick] = nil
+    LoadedServlets = {}
+    def load_servlet(name)
+      unless LoadedServlets[name]
+        begin
+          Thread.current[:webrick_load_servlet] = true
+          load @name, true
+          if Thread.current[:webrick_load_servlet].respond_to? :call
+            LoadedServlets[name] = Thread.current[:webrick_load_servlet]
+          end
+        ensure
+          Thread.current[:webrick_load_servlet] = nil
+        end
+        unless LoadedServlets[name]
+          raise "WEBrick servlet is not registered: #{path}"
+        end
       end
+      LoadedServlets[name]
+    end
+
+    def do_GET(req, res)
+      load_servlet(@name).call(req, res)
     end
     alias do_POST do_GET
   end
+
 end
 WEBrick::HTTPServlet::FileHandler.add_handler('webrick',
   WebApp::WEBrickServletHandler)

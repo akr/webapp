@@ -183,7 +183,7 @@ class WebApp
   end
 
   def WebApp.run_webapp_via_stub(path)
-    if Thread.current[:webapp_delay]
+    if Thread.current[:webrick_load_servlet]
       load path, true
       return
     end
@@ -253,22 +253,23 @@ class WebApp
 
     # WEBrick with webapp/webrick-servlet.rb
     def run_webrick
-      webrick_req, webrick_res = Thread.current[:webapp_webrick]
-      setup_request = lambda {|req|
-        req.make_request_header_from_cgi_env(webrick_req.meta_vars)
-        webrick_req.body {|chunk|
-          req.body_object << chunk
+      Thread.current[:webrick_load_servlet] = lambda {|webrick_req, webrick_res|
+        setup_request = lambda {|req|
+          req.make_request_header_from_cgi_env(webrick_req.meta_vars)
+          webrick_req.body {|chunk|
+            req.body_object << chunk
+          }
         }
-      }
-      output_response =  lambda {|res|
-        webrick_res.status = res.status_line.to_i
-        res.header_object.each {|k, v|
-          webrick_res[k] = v
+        output_response =  lambda {|res|
+          webrick_res.status = res.status_line.to_i
+          res.header_object.each {|k, v|
+            webrick_res[k] = v
+          }
+          res.body_object.rewind
+          webrick_res.body = res.body_object.read
         }
-        res.body_object.rewind
-        webrick_res.body = res.body_object.read
+        primitive_run(setup_request, output_response)
       }
-      primitive_run(setup_request, output_response)
     end
 
     def primitive_run(setup_request, output_response)
@@ -545,7 +546,7 @@ def WebApp(application_class=Object, &block) # :yields: webapp
   webapp = WebApp::Manager.new(application_class, block)
   if defined?(Apache::Request) && Apache.request.kind_of?(Apache::Request)
     run = lambda { webapp.run_rbx }
-  elsif Thread.current[:webapp_webrick]
+  elsif Thread.current[:webrick_load_servlet]
     run = lambda { webapp.run_webrick }
   elsif $stdin.respond_to?(:stat) && $stdin.stat.socket?
     run = lambda { webapp.run_fcgi }
