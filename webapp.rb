@@ -69,13 +69,52 @@ class WebApp
   def_delegator :@response_header, :clear, :clear_header
   def_delegator :@response_header, :get, :get_header
   def_delegator :@response_header, :each, :each_header
-  def_delegator :@response, :content_type=, :content_type=
 
   def content_type=(media_type)
     @response_header.set 'Content-Type', media_type
   end
+  def content_type
+    @response_header.set 'Content-Type', media_type
+  end
 
-  def make_relative_uri(hash)
+  # call-seq:
+  #   make_relative_uri(:script=>string, :path_info=>string, :fragment=>string) -> string
+  # 
+  # make a relative URI which base URI is the URI the web application is
+  # invoked.
+  #
+  # The argument should be a hash which may have following components.
+  # - :script specifies script_name relative from the directory containing
+  #   the web application script.
+  #   If it is not specified, the web application itself is assumed.
+  # - :path_info specifies path_info component for calling web application.
+  #   It should begin with a slash.
+  #   If it is not specified, "" is assumed.
+  # - :fragment specifies a fragment identifier.
+  #   If it is not specified, a fragment identifier is not appended to
+  #   the result URL.
+  #
+  # Since make_relative_uri escapes the components properly,
+  # you should specify them in unescaped form.
+  #
+  # In the example follow, assume that the web application bar.cgi is invoked
+  # as http://host/foo/bar.cgi/baz/qux.
+  #
+  #   webapp.make_relative_uri(:path_info=>"/hoge") => "../hoge"
+  #   webapp.make_relative_uri(:path_info=>"/baz/fuga") => "fuga"
+  #   webapp.make_relative_uri(:path_info=>"/baz/") => "./"
+  #   webapp.make_relative_uri(:path_info=>"/") => "../"
+  #   webapp.make_relative_uri() => "../../bar.cgi"
+  #   webapp.make_relative_uri(:script=>"funyo.cgi") => "../../funyo.cgi"
+  #   webapp.make_relative_uri(:script=>"punyo/gunyo.cgi") => "../../punyo/gunyo.cgi"
+  #   webapp.make_relative_uri(:script=>"../genyo.cgi") => "../../../genyo.cgi"
+  #   webapp.make_relative_uri(:fragment=>"sec1") => "../../bar.cgi#sec1"
+  #
+  #   webapp.make_relative_uri(:path_info=>"/h?#o/x y") => "../h%3F%23o/x%20y"
+  #   webapp.make_relative_uri(:script=>"ho%o.cgi") => "../../ho%25o.cgi"
+  #   webapp.make_relative_uri(:fragment=>"sp ce") => "../../bar.cgi#sp%20ce"
+  #
+  def make_relative_uri(hash={})
     @requri.make_relative_uri(hash)
   end
 
@@ -231,8 +270,6 @@ class WebApp
       rel_path + fragment
     end
 
-    private
-
     Alpha = 'a-zA-Z'
     Digit = '0-9'
     AlphaNum = Alpha + Digit
@@ -280,7 +317,6 @@ class WebApp
       str = str.dup.freeze unless str.frozen?
       str
     end
-    private :make_frozen_string
 
     def add(field_name, field_body)
       field_name = make_frozen_string(field_name)
