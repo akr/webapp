@@ -88,6 +88,7 @@ require 'forwardable'
 require 'pathname'
 require 'zlib'
 require 'htree'
+require 'time'
 require 'webapp/urigen'
 require 'webapp/message'
 require 'webapp/htmlform'
@@ -164,13 +165,20 @@ class WebApp
 
   # call-seq:
   #   send_resource(path)
-  #   send_resource(path, content_type)
   #
-  # send the resource indicated by _path_ to the client.
-  def send_resource(path, content_type=nil)
-    self.content_type = content_type if content_type
-    open_resource(path) {|f|
+  # send the resource indicated by _path_.
+  # Last-Modified: and If-Modified-Since: header is supported.
+  def send_resource(path)
+    path = resource_path(path)
+    if ims = @request_header['If-Modified-Since'] and
+       ((ims = Time.httpdate(ims)) rescue nil) and
+       path.mtime <= ims
+      @response.status_line = '304 Not Modified'
+      return
+    end
+    path.open {|f|
       @response_body << f.read
+      @response_header.set 'Last-Modified', f.mtime.httpdate
     }
   end
 
