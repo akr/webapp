@@ -9,8 +9,8 @@ M = HTree.compile_template <<'End'
   <body>
     <h1 _text>n</h1>
     <ul>
-    <li><a name=prev _attr_href='WebApp.reluri(:path_info=>"/#{n-1}", :fragment=>"prev")'>prev (<span _text="n-1"/>)</a>
-    <li><a name=next _attr_href='WebApp.reluri(:path_info=>"/#{n+1}", :fragment=>"next")'>next (<span _text="n+1"/>)</a>
+    <li><a name=pred _attr_href='WebApp.reluri(:path_info=>"/#{n-1}", :fragment=>"pred")'>pred (<span _text="n-1"/>)</a>
+    <li><a name=succ _attr_href='WebApp.reluri(:path_info=>"/#{n+1}", :fragment=>"succ")'>succ (<span _text="n+1"/>)</a>
     </ul>
   </body>
 </html>
