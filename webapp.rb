@@ -14,6 +14,7 @@
 #     response.puts <<"End"
 #   current time: #{Time.now}
 #   pid: #{$$}
+#   self: #{self.inspect}
 #   
 #   request_method: #{request.request_method}
 #   server_name: #{request.server_name}
@@ -36,9 +37,14 @@
 require 'stringio'
 require 'forwardable'
 
-module WebApp
+class WebApp
+  def initialize(app_class, app_block) # :nodoc:
+    @app_class = app_class
+    @app_block = app_block
+  end
+
   # CGI
-  def WebApp.run_cgi # :nodoc:
+  def run_cgi # :nodoc:
     setup_request = lambda {|req|
       req.make_request_header_from_cgi_env(ENV)
       if ENV.include?('CONTENT_LENGTH')
@@ -50,11 +56,11 @@ module WebApp
       res.output_cgi_status_field($stdout)
       res.output_message($stdout)
     }
-    primitive_run(setup_request, output_response) {|req, res| yield req, res }
+    primitive_run(setup_request, output_response)
   end
 
   # FastCGI
-  def WebApp.run_fcgi # :nodoc:
+  def run_fcgi # :nodoc:
     require 'fcgi'
     FCGI.each_request {|fcgi_request|
       setup_request = lambda {|req|
@@ -68,12 +74,12 @@ module WebApp
         res.output_message(fcgi_request.out)
         fcgi_request.finish
       }
-      primitive_run(setup_request, output_response) {|req, res| yield req, res }
+      primitive_run(setup_request, output_response)
     }
   end
 
   # mod_ruby
-  def WebApp.run_rbx # :nodoc:
+  def run_rbx # :nodoc:
     rbx_request = Apache.request
     setup_request = lambda {|req|
       req.make_request_header_from_cgi_env(rbx_request.subprocess_env)
@@ -90,21 +96,25 @@ module WebApp
       res.rewind
       rbx_request.write res.read
     }
-    primitive_run(setup_request, output_response) {|req, res| yield req, res }
+    primitive_run(setup_request, output_response)
   end
 
-  def WebApp.primitive_run(setup_request, output_response) # :nodoc:
+  def primitive_run(setup_request, output_response) # :nodoc:
     req = Request.new
     res = Response.new
     trap_exception(req, res) {
       setup_request.call(req)
       req.freeze
-      yield req, res
+      app = @app_class.new
+      if @app_block
+        class << app; self end.__send__(:define_method, :webapp_main, &@app_block)
+      end
+      app.webapp_main(req, res)
     }
     output_response.call(res)
   end
 
-  def WebApp.trap_exception(req, res) # :nodoc:
+  def trap_exception(req, res) # :nodoc:
     begin
       yield
     rescue Exception => e
@@ -176,6 +186,7 @@ module WebApp
 
     private
 
+    # :stopdoc:
     Alpha = 'a-zA-Z'
     Digit = '0-9'
     AlphaNum = Alpha + Digit
@@ -191,6 +202,7 @@ module WebApp
     def uric_escape(s)
       s.gsub(/[^#{Uric}]/on) {|c| sprintf("%%%02X", c[0]) }
     end
+    # :startdoc:
   end
 
   class Header
@@ -373,14 +385,23 @@ module WebApp
   end
 end
 
-def WebApp
+# WebApp is a main routine of web application.
+# It should be called from a toplevel of a CGI/FastCGI/mod_ruby script.
+#
+# WebApp yields with a request and response object.
+# The request object represents information from a client.
+# The reseponse object represents information to a client which is initially empty.
+# In the block, self is replaced by newly created _application_class_ object.
+#
+def WebApp(application_class=Object, &block) # :yields: request, response
   $SAFE = 1 if $SAFE < 1
+  webapp = WebApp.new(application_class, block)
   if defined?(Apache::Request) && Apache.request.kind_of?(Apache::Request)
-    WebApp.run_rbx {|request, response| yield request, response }
+    webapp.run_rbx
   elsif $stdin.respond_to?(:stat) && $stdin.stat.socket?
-    WebApp.run_fcgi {|request, response| yield request, response }
+    webapp.run_fcgi
   elsif ENV.include?('REQUEST_METHOD')
-    WebApp.run_cgi {|request, response| yield request, response }
+    webapp.run_cgi
   else
     raise "not CGI/FastCGI/mod_ruby environment."
   end
