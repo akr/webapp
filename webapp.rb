@@ -119,7 +119,7 @@ module WebApp
 
     def freeze # :nodoc:
       @fields.freeze
-      self.freeze
+      super
     end
 
     def clear
@@ -201,6 +201,14 @@ module WebApp
       @body_object = StringIO.new(body.to_str)
     end
     attr_reader :body_object, :header_object
+
+    def freeze # :nodoc:
+      @header_object.freeze
+      unless @body_object.string.frozen?
+        @body_object = StringIO.new(@body_object.string.freeze)
+      end
+      super
+    end
 
     def output_message(out) # :nodoc:
       content = @body_object.length
