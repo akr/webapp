@@ -2,7 +2,7 @@
 
 require 'webapp'
 
-WebApp {|request, response|
-  response.content_type = 'text/plain'
-  response.puts "Hello World."
+WebApp {|webapp|
+  webapp.content_type = 'text/plain'
+  webapp.puts "Hello World."
 }

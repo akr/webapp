@@ -9,27 +9,27 @@
 #
 #   require 'webapp'
 #  
-#   WebApp {|request, response|
-#     response.set_header 'Content-Type', 'text/plain'
-#     response.puts <<"End"
+#   WebApp {|webapp|
+#     webapp.content_type = 'text/plain'
+#     webapp.puts <<"End"
 #   current time: #{Time.now}
 #   pid: #{$$}
 #   self: #{self.inspect}
 #   
-#   request_method: #{request.request_method}
-#   server_name: #{request.server_name}
-#   server_port: #{request.server_port}
-#   script_name: #{request.script_name}
-#   path_info: #{request.path_info}
-#   query_string: #{request.query_string}
-#   server_protocol: #{request.server_protocol}
-#   remote_addr: #{request.remote_addr}
-#   content_type: #{request.content_type}
+#   request_method: #{webapp.request_method}
+#   server_name: #{webapp.server_name}
+#   server_port: #{webapp.server_port}
+#   script_name: #{webapp.script_name}
+#   path_info: #{webapp.path_info}
+#   query_string: #{webapp.query_string}
+#   server_protocol: #{webapp.server_protocol}
+#   remote_addr: #{webapp.remote_addr}
+#   content_type: #{webapp.content_type}
 #   
 #   --- request headers ---
 #   End
-#     request.each_header {|k, v|
-#       response.puts "#{k}: #{v}"
+#     webapp.each_request_header {|k, v|
+#       webapp.puts "#{k}: #{v}"
 #     }
 #   }
 #
@@ -38,91 +38,139 @@ require 'stringio'
 require 'forwardable'
 
 class WebApp
-  def initialize(app_class, app_block) # :nodoc:
-    @app_class = app_class
-    @app_block = app_block
+  def initialize(request, response) # :nodoc:
+    @request = request
+    @request_header = request.header_object
+    @request_body = request.body_object
+    @response = response
+    @response_header = response.header_object
+    @response_body = response.body_object
+    @requri = ReqURI.new(@request.script_name, @request.path_info)
   end
 
-  # CGI
-  def run_cgi # :nodoc:
-    setup_request = lambda {|req|
-      req.make_request_header_from_cgi_env(ENV)
-      if ENV.include?('CONTENT_LENGTH')
-        len = ENV['CONTENT_LENGTH'].to_i
-        req << $stdin.read(len)
-      end
-    }
-    output_response = lambda {|res|
-      res.output_cgi_status_field($stdout)
-      res.output_message($stdout)
-    }
-    primitive_run(setup_request, output_response)
+  extend Forwardable
+  def_delegators :@response_body, :<<, :print, :printf, :putc, :puts, :write
+
+  def_delegator :@request_header, :each, :each_request_header
+  def_delegator :@request_header, :[], :get_request_header
+
+  def_delegator :@request, :request_method, :request_method
+  def_delegator :@request, :server_name, :server_name
+  def_delegator :@request, :server_port, :server_port
+  def_delegator :@request, :script_name, :script_name
+  def_delegator :@request, :path_info, :path_info
+  def_delegator :@request, :query_string, :query_string
+  def_delegator :@request, :server_protocol, :server_protocol
+  def_delegator :@request, :remote_addr, :remote_addr
+  def_delegator :@request, :content_type, :request_content_type
+
+  def_delegator :@response_header, :set, :set_header
+  def_delegator :@response_header, :add, :add_header
+  def_delegator :@response_header, :clear, :clear_header
+  def_delegator :@response_header, :get, :get_header
+  def_delegator :@response_header, :each, :each_header
+  def_delegator :@response, :content_type=, :content_type=
+
+  def content_type=(media_type)
+    @response_header.set 'Content-Type', media_type
   end
 
-  # FastCGI
-  def run_fcgi # :nodoc:
-    require 'fcgi'
-    FCGI.each_request {|fcgi_request|
+  def make_relative_uri(hash)
+    @requri.make_relative_uri(hash)
+  end
+
+  # :stopdoc:
+  class Manager
+    def initialize(app_class, app_block)
+      @app_class = app_class
+      @app_block = app_block
+    end
+
+    # CGI, Esehttpd
+    def run_cgi
       setup_request = lambda {|req|
-        req.make_request_header_from_cgi_env(fcgi_request.env)
-        if content = fcgi_request.in.read
+        req.make_request_header_from_cgi_env(ENV)
+        if ENV.include?('CONTENT_LENGTH')
+          len = ENV['CONTENT_LENGTH'].to_i
+          req << $stdin.read(len)
+        end
+      }
+      output_response = lambda {|res|
+        res.output_cgi_status_field($stdout)
+        res.output_message($stdout)
+      }
+      primitive_run(setup_request, output_response)
+    end
+
+    # FastCGI
+    def run_fcgi
+      require 'fcgi'
+      FCGI.each_request {|fcgi_request|
+        setup_request = lambda {|req|
+          req.make_request_header_from_cgi_env(fcgi_request.env)
+          if content = fcgi_request.in.read
+            req << content
+          end
+        }
+        output_response =  lambda {|res|
+          res.output_cgi_status_field(fcgi_request.out)
+          res.output_message(fcgi_request.out)
+          fcgi_request.finish
+        }
+        primitive_run(setup_request, output_response)
+      }
+    end
+
+    # mod_ruby
+    def run_rbx
+      rbx_request = Apache.request
+      setup_request = lambda {|req|
+        req.make_request_header_from_cgi_env(rbx_request.subprocess_env)
+        if content = rbx_request.read
           req << content
         end
       }
       output_response =  lambda {|res|
-        res.output_cgi_status_field(fcgi_request.out)
-        res.output_message(fcgi_request.out)
-        fcgi_request.finish
+        rbx_request.status_line = "#{res.status_line}"
+        res.header_object.each {|k, v|
+          rbx_request.headers_out[k] = v
+        }
+        res.body_object.rewind
+        rbx_request.write res.body_object.read
       }
       primitive_run(setup_request, output_response)
-    }
-  end
+    end
 
-  # mod_ruby
-  def run_rbx # :nodoc:
-    rbx_request = Apache.request
-    setup_request = lambda {|req|
-      req.make_request_header_from_cgi_env(rbx_request.subprocess_env)
-      if content = rbx_request.read
-        req << content
-      end
-    }
-    output_response =  lambda {|res|
-      rbx_request.status_line = "#{res.status_line}"
-      res.each_header {|k, v|
-        rbx_request.headers_out[k] = v
+    def primitive_run(setup_request, output_response)
+      req = Request.new
+      res = Response.new
+      trap_exception(req, res) {
+        setup_request.call(req)
+        req.freeze
+        webapp = WebApp.new(req, res)
+        app = @app_class.new
+        if @app_block
+          class << app; self end.__send__(:define_method, :webapp_main, &@app_block)
+        end
+        app.webapp_main(webapp)
       }
-      res.rewind
-      rbx_request.write res.read
-    }
-    primitive_run(setup_request, output_response)
-  end
+      output_response.call(res)
+    end
 
-  def primitive_run(setup_request, output_response) # :nodoc:
-    req = Request.new
-    res = Response.new
-    trap_exception(req, res) {
-      setup_request.call(req)
-      req.freeze
-      app = @app_class.new
-      if @app_block
-        class << app; self end.__send__(:define_method, :webapp_main, &@app_block)
+    def trap_exception(req, res)
+      begin
+        yield
+      rescue Exception => e
+        res.status_line = '500 Internal Server Error'
+        header = res.header_object
+        header.clear
+        header.add 'Content-Type', 'text/plain'
+        body = res.body_object
+        body.rewind
+        body.truncate(0)
+        body.puts "#{e.message} (#{e.class})"
+        e.backtrace.each {|f| body.puts f }
       end
-      app.webapp_main(req, res)
-    }
-    output_response.call(res)
-  end
-
-  def trap_exception(req, res) # :nodoc:
-    begin
-      yield
-    rescue Exception => e
-      res.status_line = '500 Internal Server Error'
-      res.clear_header
-      res.add_header 'Content-Type', 'text/plain'
-      res.truncate(0)
-      res.puts "#{e.message} (#{e.class})"
-      e.backtrace.each {|f| res.puts f }
     end
   end
 
@@ -185,7 +233,6 @@ class WebApp
 
     private
 
-    # :stopdoc:
     Alpha = 'a-zA-Z'
     Digit = '0-9'
     AlphaNum = Alpha + Digit
@@ -201,19 +248,18 @@ class WebApp
     def uric_escape(s)
       s.gsub(/[^#{Uric}]/on) {|c| sprintf("%%%02X", c[0]) }
     end
-    # :startdoc:
   end
 
   class Header
-    def Header.capitalize_field_name(field_name) # :nodoc:
+    def Header.capitalize_field_name(field_name)
       field_name.gsub(/[A-Za-z]+/) {|s| s.capitalize }
     end
 
-    def initialize # :nodoc:
+    def initialize
       @fields = []
     end
 
-    def freeze # :nodoc:
+    def freeze
       @fields.freeze
       super
     end
@@ -275,7 +321,7 @@ class WebApp
   end
 
   class Message
-    def initialize(header={}, body='') # :nodoc:
+    def initialize(header={}, body='')
       @header_object = Header.new
       case header
       when Hash
@@ -296,16 +342,15 @@ class WebApp
       raise ArgumentError, "unexpected body: #{body.inspect}" unless body.respond_to? :to_str
       @body_object = StringIO.new(body.to_str)
     end
+    attr_reader :header_object, :body_object
 
-    def freeze # :nodoc:
+    def freeze
       @header_object.freeze
-      unless @body_object.string.frozen?
-        @body_object = StringIO.new(@body_object.string.freeze)
-      end
+      @body_object.string.freeze
       super
     end
 
-    def output_message(out) # :nodoc:
+    def output_message(out)
       content = @body_object.length
       @header_object.each {|k, v|
         out << "#{k}: #{v}\n"
@@ -313,26 +358,10 @@ class WebApp
       out << "\n"
       out << @body_object.string
     end
-
-    extend Forwardable
-    def_delegators :@body_object,
-      :<<,
-      :each, :each_line, :each_byte, :eof, :eof?,
-      :getc, :gets, :pos, :tell, :pos=,
-      :print, :printf, :putc, :puts,
-      :read, :readchar, :readline, :readlines,
-      :rewind, :seek, :ungetc, :write,
-      :truncate
-
-    def_delegator :@header_object, :set, :set_header
-    def_delegator :@header_object, :add, :add_header
-    def_delegator :@header_object, :clear, :clear_header
-    def_delegator :@header_object, :[], :get_header
-    def_delegator :@header_object, :each, :each_header
   end
 
   class Request < Message
-    def initialize(request_line=nil, header={}, body='') # :nodoc:
+    def initialize(request_line=nil, header={}, body='')
       @request_line = request_line
       super header, body
     end
@@ -343,7 +372,7 @@ class WebApp
                 :server_protocol,
                 :remote_addr, :content_type
 
-    def make_request_header_from_cgi_env(env) # :nodoc:
+    def make_request_header_from_cgi_env(env)
       env.each {|k, v|
         next if /\AHTTP_/ !~ k
         k = Header.capitalize_field_name($')
@@ -362,43 +391,36 @@ class WebApp
 
       # non-standard:
       @request_uri = env['REQUEST_URI'] # Apache
-
-      @requri = ReqURI.new(@script_name, @path_info)
-    end
-
-    def make_relative_uri(hash)
-      @requri.make_relative_uri(hash)
     end
   end
 
   class Response < Message
-    def initialize(status_line='200 OK', header={}, body='') # :nodoc:
+    def initialize(status_line='200 OK', header={}, body='')
       @status_line = status_line
       super header, body
     end
     attr_accessor :status_line
 
-    def output_cgi_status_field(out) # :nodoc:
+    def output_cgi_status_field(out)
       out << "Status: #{self.status_line}\n"
     end
-
-    def content_type=(media_type)
-      set_header 'Content-Type', media_type
-    end
   end
+  # :startdoc:
 end
 
 # WebApp is a main routine of web application.
 # It should be called from a toplevel of a CGI/FastCGI/mod_ruby script.
 #
-# WebApp yields with a request and response object.
-# The request object represents information from a client.
-# The reseponse object represents information to a client which is initially empty.
+# WebApp yields with an object of the class WebApp.
+# The object contains request and response.
+#
 # In the block, self is replaced by newly created _application_class_ object.
 #
-def WebApp(application_class=Object, &block) # :yields: request, response
+# WebApp rise $SAFE to 1.
+#
+def WebApp(application_class=Object, &block) # :yields: webapp
   $SAFE = 1 if $SAFE < 1
-  webapp = WebApp.new(application_class, block)
+  webapp = WebApp::Manager.new(application_class, block)
   if defined?(Apache::Request) && Apache.request.kind_of?(Apache::Request)
     webapp.run_rbx
   elsif $stdin.respond_to?(:stat) && $stdin.stat.socket?

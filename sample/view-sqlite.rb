@@ -30,8 +30,8 @@ End
   }
 end
 
-def list_tables(req, res)
-  HTree.expand_template(res) {<<'End'}
+def list_tables(webapp)
+  HTree.expand_template(webapp) {<<'End'}
 <html>
   <head>
     <title>table list of SQLite</title>
@@ -40,7 +40,7 @@ def list_tables(req, res)
     <table border=1>
       <tr><th>name<th>records
       <div _iter="foreach_table//table_name,numrecords">
-        <tr><td><a _attr_href='req.make_relative_uri(:path_info=>"/table/#{table_name}")'
+        <tr><td><a _attr_href='webapp.make_relative_uri(:path_info=>"/table/#{table_name}")'
                    _text=table_name>table entry
             <td _text=numrecords># of records
       </div>
@@ -74,11 +74,11 @@ End
   end
 end
 
-def show_table(req, res, table_name, beg=0, num=100)
+def show_table(webapp, table_name, beg=0, num=100)
   beg = 0 if beg < 0
   num = 100 if 100 < num
   num = 1 if num < 1
-  HTree.expand_template(res) {<<'End'}
+  HTree.expand_template(webapp) {<<'End'}
 <html>
   <head>
     <title>table content of SQLite</title>
@@ -95,32 +95,32 @@ def show_table(req, res, table_name, beg=0, num=100)
       </div>
     </table>
     <span _if="0 < beg" _else="no_prev">
-      <a _attr_href='req.make_relative_uri(:path_info=>"/table/#{table_name}/#{[beg-num,0].max}-#{beg-1}")'>[prev]</a>
+      <a _attr_href='webapp.make_relative_uri(:path_info=>"/table/#{table_name}/#{[beg-num,0].max}-#{beg-1}")'>[prev]</a>
     </span>
     <span _template="no_prev">[prev]</span>
     <span _if="cont[0]" _else="no_next">
-      <a _attr_href='req.make_relative_uri(:path_info=>"/table/#{table_name}/#{beg+num}-#{beg+num+num-1}")'>[next]</a>
+      <a _attr_href='webapp.make_relative_uri(:path_info=>"/table/#{table_name}/#{beg+num}-#{beg+num+num-1}")'>[next]</a>
     </span>
     <span _template="no_next">[next]</span>
     <hr>
-    <a _attr_href='req.make_relative_uri(:path_info=>"")'>back to table list</a>
+    <a _attr_href='webapp.make_relative_uri(:path_info=>"")'>back to table list</a>
   </body>
 </html>
 End
 end
 
-WebApp {|request, response|
+WebApp {|webapp|
   unless defined? $config
     $config = YAML.load(File.read("#{File.dirname(__FILE__)}/view-sqlite.yml"))
     $db_path = $config.fetch('db_path')
   end
 
-  response.content_type = 'text/html'
+  webapp.content_type = 'text/html'
 
-  _, command, *args = request.path_info.split(%r{/})
+  _, command, *args = webapp.path_info.split(%r{/})
   case command
   when nil, ''
-    list_tables(request, response)
+    list_tables(webapp)
   when 'table'
     table, range, = args
     beg = 0
@@ -133,7 +133,7 @@ WebApp {|request, response|
       beg = $1.to_i
       num = 100
     end
-    show_table(request, response, table, beg, num)
+    show_table(webapp, table, beg, num)
   else
     raise "unexpected command: #{command}"
   end
