@@ -5,7 +5,7 @@
 * very easy-to-use API
 * works under CGI, FastCGI and mod_ruby without modification
 * path_info aware relative URI generation
-* HTML form parameter varidation by HTML form 
+* HTML form parameter varidation by HTML form
 
 == How to Install
 

@@ -14,12 +14,14 @@ ARGV.each {|script_name|
     f << <<"End"
 #!#{RUBY}
 
-# This file is auto-generated.  Don't edit.
+# This file is auto-generated stub file.  Don't edit.
 
 Dir.chdir #{script_path.dirname.to_s.dump}
-$:.unshift #{script_path.dirname.to_s.dump}
+$:.replace [#{script_path.dirname.to_s.dump}] | $:
 $:.delete '.'
-load #{script_path.to_s.dump}
+require 'webapp'
+WebApp.run_webapp_via_stub(#{script_path.to_s.dump})
 End
+    f.chmod 0755
   }
 }

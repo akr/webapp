@@ -331,15 +331,15 @@ class WebApp
                 (image_y_basenames - image_x_basenames)
         diff.sort!
         raise QueryValidationFailure,
-          "non-pair image position: selected: #{diffs.map {|d| d.inspect }.join(' ')}"
+          "non-pair image position: #{diffs.map {|d| d.inspect }.join(' ')}"
       end
       unless radio_nonempty.empty?
         raise QueryValidationFailure,
-          "radio button not checked: #{radio_nonempty.map {|d| d.inspect }.join(' ')}"
+          "no radio button checked: #{radio_nonempty.map {|d| d.inspect }.join(' ')}"
       end
       unless select_nonempty.empty?
         raise QueryValidationFailure,
-          "menu not selected: #{select_nonempty.map {|d| d.inspect }.join(' ')}"
+          "no options selected: #{select_nonempty.map {|d| d.inspect }.join(' ')}"
       end
     end
 

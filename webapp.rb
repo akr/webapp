@@ -67,6 +67,7 @@ class WebApp
 
   def_delegator :@response_header, :set, :set_header
   def_delegator :@response_header, :add, :add_header
+  def_delegator :@response_header, :remove, :remove_header
   def_delegator :@response_header, :clear, :clear_header
   def_delegator :@response_header, :[], :get_header
   def_delegator :@response_header, :each, :each_header
@@ -163,6 +164,21 @@ class WebApp
     str
   end
 
+  LoadedWebAppProcs = {}
+  def WebApp.run_webapp_via_stub(path)
+    unless LoadedWebAppProcs[path]
+      begin
+        Thread.current[:webapp_delay] = true
+        load path, true
+        LoadedWebAppProcs[path] = Thread.current[:webapp_proc]
+      ensure
+        Thread.current[:webapp_delay] = nil
+        Thread.current[:webapp_proc] = nil
+      end
+    end
+    LoadedWebAppProcs[path].call
+  end
+
   class Manager
     def initialize(app_class, app_block)
       @app_class = app_class
@@ -233,10 +249,11 @@ class WebApp
         req.body_object.rewind
         webapp = WebApp.new(req, res)
         app = @app_class.new
-        if @app_block
-          class << app; self end.__send__(:define_method, :webapp_main, &@app_block)
-        end
-        app.webapp_main(webapp)
+        @app_block.call(webapp); next # xxx: avoid core dump [ruby-dev:24228]
+        #if @app_block
+        #  class << app; self end.__send__(:define_method, :webapp_main, &@app_block)
+        #end
+        #app.webapp_main(webapp)
       }
       output_response.call(res)
     end
@@ -496,12 +513,17 @@ def WebApp(application_class=Object, &block) # :yields: webapp
   $SAFE = 1 if $SAFE < 1
   webapp = WebApp::Manager.new(application_class, block)
   if defined?(Apache::Request) && Apache.request.kind_of?(Apache::Request)
-    webapp.run_rbx
+    run = lambda { webapp.run_rbx }
   elsif $stdin.respond_to?(:stat) && $stdin.stat.socket?
-    webapp.run_fcgi
+    run = lambda { webapp.run_fcgi }
   elsif ENV.include?('REQUEST_METHOD')
-    webapp.run_cgi
+    run = lambda { webapp.run_cgi }
   else
     raise "not CGI/FastCGI/mod_ruby environment."
+  end
+  if Thread.current[:webapp_delay]
+    Thread.current[:webapp_proc] = run
+  else
+    run.call
   end
 end

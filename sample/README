@@ -1,0 +1,30 @@
+This directory contains several example for webapp.
+
+= Scripts
+
+* hello.cgi       : hello-world cgi
+* view-sqlite.cgi : web interface for SQLite database.  (needs config. to run.)
+
+= How to Install
+
+% cd .../webapp/sample
+% make
+% mkdir ~/public_html/webapp-sample
+% cp cgi-bin/*.cgi ~/public_html/webapp-sample
+
+The above "make" generates wrappers for each cgi scripts.
+Since cgi-bin/*.cgi are just a wrapper, actual scripts in sample directory are
+still required to run.
+
+== FastCGI, mod_ruby
+
+If your web server supports FastCGI or mod_ruby, sample scripts can be run
+on them.
+
+% cd ~/public_html/webapp-sample
+% cp hello.cgi hello.fcgi
+% cp hello.cgi hello.rbx
+
+Since webapp scripts can run under CGI, FastCGI and mod_ruby without
+modification, just a cp is enough to setup.
+
