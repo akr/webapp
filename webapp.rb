@@ -14,6 +14,7 @@
 #   (URL will be http://host/path_info?query.
 #   No path component to specify a web application.)
 #   link:files/webapp/webrick-servlet_rb.html
+# * runnable from command line (non-interactive, unlike cgi.rb and CGI.pm)
 #
 # == Example
 #
@@ -21,6 +22,7 @@
 # without any modification.
 # It also works as WEBrick servlet (*.webrick) if the WEBrick based server
 # requires "webapp/webapp/webrick-servlet".
+# It also works as usual ruby script.
 #
 #   #!/path/to/ruby
 #
@@ -49,6 +51,31 @@
 #       webapp.puts "#{k}: #{v}"
 #     }
 #   }
+#
+# You can invoke the script from command line as follows.
+# The optional first argument is path info.
+# The optional second argument is query string.
+#   
+#   % ruby tst.cgi /path/info query=string
+#   Status: 200 OK
+#   Content-Type: text/plain
+#   Content-Length: 319
+#   
+#   current time: Mon Dec 20 19:46:03 JST 2004
+#   pid: 11170
+#   self: main
+#   
+#   request_method: GET
+#   server_name: localhost
+#   server_port: 80
+#   script_name: /tst.cgi
+#   path_info: /path/info
+#   query_string: #<WebApp::QueryString: query=string>
+#   server_protocol: HTTP/1.0
+#   remote_addr: 127.0.0.1
+#   content_type: text/plain
+#   
+#   --- request headers ---
 #
 # == recommended directory layout for web application
 #
@@ -129,7 +156,7 @@ class WebApp
     @response_header.set 'Content-Type', media_type
   end
   def content_type
-    @response_header.set 'Content-Type', media_type
+    @response_header['Content-Type']
   end
 
   # returns a Pathname object.
@@ -334,6 +361,7 @@ class WebApp
     def inspect
       "#<#{self.class}: #{@escaped_query_string}>"
     end
+    alias to_s inspect
   end
 
   # :stopdoc:
@@ -376,6 +404,38 @@ class WebApp
       @resource_basedir = Pathname.new(eval("__FILE__", app_block)).dirname
     end
     attr_reader :resource_basedir
+
+    # Test
+    def run_test
+      setup_request = lambda {|req|
+        if ARGV.empty?
+          path_info = ''
+          query_string = ''
+        elsif %r{\A/} =~ ARGV[0]
+          path_info = ARGV[0]
+          query_string = ARGV[1..-1].join('&')
+        else
+          path_info = ''
+          query_string = ARGV.join('&')
+        end
+        req.make_request_header_from_cgi_env({
+          'REQUEST_METHOD' => 'GET',
+          'SERVER_NAME' => 'localhost',
+          'SERVER_PORT' => 80,
+          'SCRIPT_NAME' => "/#{File.basename($0)}",
+          'PATH_INFO' => path_info,
+          'QUERY_STRING' => query_string,
+          'SERVER_PROTOCOL' => 'HTTP/1.0',
+          'REMOTE_ADDR' => '127.0.0.1',
+          'CONTENT_TYPE' => ''
+        })
+      }
+      output_response = lambda {|res|
+        res.output_cgi_status_field($stdout)
+        res.output_message($stdout)
+      }
+      primitive_run(setup_request, output_response)
+    end
 
     # CGI, Esehttpd
     def run_cgi
@@ -610,7 +670,7 @@ def WebApp(&block) # :yields: webapp
   elsif ENV.include?('REQUEST_METHOD')
     run = lambda { manager.run_cgi }
   else
-    raise "not CGI/FastCGI/mod_ruby/WEBrick environment."
+    run = lambda { manager.run_test }
   end
   if Thread.current[:webapp_delay]
     Thread.current[:webapp_proc] = run
