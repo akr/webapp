@@ -1,9 +1,11 @@
-# = webapp.rb - unified web application interface for CGI, FastCGI and mod_ruby.
+# = webapp.rb - unified web application interface for CGI, FastCGI mod_ruby and WEBrick.
 #
 # == example
 #
 # Following script works as CGI(*.cgi), FastCGI(*.fcgi) and mod_ruby(*.rbx)
 # without any modification.
+# It also works as WEBrick servlet (*.webrick) if the WEBrick based server
+# requires "webapp/webapp/webrick-servlet".
 #
 #   #!/path/to/ruby
 #
