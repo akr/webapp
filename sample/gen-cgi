@@ -16,11 +16,14 @@ ARGV.each {|script_name|
 
 # This file is auto-generated stub file.  Don't edit.
 
-Dir.chdir #{script_path.dirname.to_s.dump}
-$:.replace [#{script_path.dirname.to_s.dump}] | $:
+script_name = #{script_path.to_s.dump}
+
+script_dir = File.dirname(script_name)
+Dir.chdir script_dir
+$:.replace [script_dir] | $:
 $:.delete '.'
 require 'webapp'
-WebApp.run_webapp_via_stub(#{script_path.to_s.dump})
+WebApp.run_webapp_via_stub(script_name)
 End
     f.chmod 0755
   }
