@@ -621,6 +621,7 @@ End
     def generate_error_page(req, res, exc)
       backtrace = "#{exc.message} (#{exc.class})\n"
       exc.backtrace.each {|f| backtrace << f << "\n" }
+      $stderr.puts backtrace # output to error.log
       res.status_line = '500 Internal Server Error'
       header = res.header_object
       header.clear
