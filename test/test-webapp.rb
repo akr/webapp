@@ -63,4 +63,15 @@ class WebApPTest < Test::Unit::TestCase
     assert_equal('http://www.ruby-lang.org/', res.header_object['Location'])
   end
 
+  def test_content_type
+    f = lambda {|expected, content|
+      res = webapp_test('GET', 'http://host/script.cgi') {|webapp|
+        webapp << content
+      }
+      assert_equal(expected, res.header_object['Content-Type'])
+    }
+    f.call(nil, '')
+    f.call('text/html', '<html></html>')
+    f.call('text/html; charset="euc-jp"', '<?xml version="1.0" encoding="euc-jp"?><html>')
+  end
 end

@@ -457,6 +457,8 @@ class WebApp
     def complete_response(res)
       unless res.header_object.has? 'Content-Type'
         case res.body_object.string
+        when /\A\z/
+          content_type = nil
         when /\A\211PNG\r\n\032\n/
           content_type = 'image/png'
         when /\A#{HTree::Pat::XmlDecl_C}\s*#{HTree::Pat::DocType_C}/io
@@ -474,7 +476,7 @@ class WebApp
         else
           content_type = 'text/plain'
         end
-        res.header_object.set 'Content-Type', content_type
+        res.header_object.set 'Content-Type', content_type if content_type
       end
       unless res.header_object.has? 'Content-Length'
         res.header_object.set 'Content-Length', res.body_object.length.to_s
