@@ -82,7 +82,7 @@ class WebApp
   end
 
   # call-seq:
-  #   make_relative_uri(:script=>string, :path_info=>string, :fragment=>string) -> string
+  #   make_relative_uri(:script=>string, :path_info=>string, :query=>query, :fragment=>string) -> string
   # 
   # make a relative URI which base URI is the URI the web application is
   # invoked.
@@ -94,6 +94,8 @@ class WebApp
   # - :path_info specifies path_info component for calling web application.
   #   It should begin with a slash.
   #   If it is not specified, "" is assumed.
+  # - :query specifies query a component.
+  #   It should be a Hash or a WebApp::QueryString.
   # - :fragment specifies a fragment identifier.
   #   If it is not specified, a fragment identifier is not appended to
   #   the result URL.
@@ -318,7 +320,7 @@ class WebApp
     def make_relative_uri(hash)
       script = hash[:script]
       path_info = hash[:path_info]
-      #query = hash[:query]
+      query = hash[:query]
       fragment = hash[:fragment]
 
       if !script
@@ -356,14 +358,43 @@ class WebApp
 
       rel_path.gsub!(%r{[^/]+}) {|segment| pchar_escape(segment) }
 
+      if query
+        case query
+        when QueryString
+          query = query.instance_eval { @escaped_query_string }
+        when Hash
+          query = query.map {|k, v|
+            case v
+            when String
+              "#{form_escape(k)}=#{form_escape(v)}"
+            when Array
+              v.map {|e|
+                unless String === e
+                  raise ArgumentError, "unexpected query value: #{e.inspect}"
+                end
+                "#{form_escape(k)}=#{form_escape(e)}"
+              }
+            else
+              raise ArgumentError, "unexpected query value: #{v.inspect}"
+            end
+          }.join(';')
+        else
+          raise ArgumentError, "unexpected query: #{query.inspect}"
+        end
+        unless query.empty?
+          query = '?' + uric_escape(query)
+        end
+      else
+        query = ''
+      end
+
       if fragment
         fragment = "#" + uric_escape(fragment)
       else
         fragment = ''
       end
 
-      #rel_path + query + fragment
-      rel_path + fragment
+      rel_path + query + fragment
     end
 
     Alpha = 'a-zA-Z'
@@ -380,6 +411,12 @@ class WebApp
     Uric = Reserved + Unreserved
     def uric_escape(s)
       s.gsub(/[^#{Uric}]/on) {|c| sprintf("%%%02X", c[0]) }
+    end
+
+    def form_escape(s)
+      s.gsub(/[#{Reserved}\x00-\x1f\x7f-\xff]/on) {|c|
+        sprintf("%%%02X", c[0])
+      }.gsub(/ /on) { '+' }
     end
   end
 

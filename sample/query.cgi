@@ -9,7 +9,7 @@ Template = <<'End'
     <title>query sample</title>
   </head>
   <body>
-    <form action="q.cgi">
+    <form _attr_action="webapp.make_relative_uri">
       Menu:
       <select name=menu multiple>
         <option selected>fish</option>
@@ -22,7 +22,7 @@ Template = <<'End'
     <p>
       Since WebApp#validate_html_query validates a query
       according to a given form,
-      impossible query such as <a href="q.cgi?menu=kusaya">kusaya</a> is
+      impossible query such as <a _attr_href="webapp.make_relative_uri(:query=>{'menu'=>'kusaya'})">kusaya</a> is
       ignored because WebApp#validate_html_query raises
       WebApp::QueryValidationFailure exception.
     </p>
