@@ -611,8 +611,8 @@ def WebApp(application_class=Object, &block) # :yields: webapp
           require 'socket'
           # getpeername(FCGI_LISTENSOCK_FILENO) causes ENOTCONN for FastCGI
           # cf. http://www.fastcgi.com/devkit/doc/fcgi-spec.html
-          sock = UNIXSocket.for_fd(0)
-          sock.peeraddr
+          sock = Socket.for_fd(0)
+          sock.getpeername
           false
         rescue Errno::ENOTCONN
           true
