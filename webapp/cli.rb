@@ -2,6 +2,11 @@
 #
 # A web application using webapp has CLI (command line interface).
 # You can invoke a webapp script from command line.
+# There are two modes: client and server.
+# In the client mode, the script processes a request which is specified as
+# a command line arguments.
+# In the server mode, the script works as a HTTP server which provides the web
+# application.
 #
 #   xxx.cgi [options] [/path_info] [?query_string]
 #       -h, --help                       show this message
@@ -12,6 +17,14 @@
 #           --script-name=STRING         set script name
 #           --remote-addr=STRING         set remote IP address
 #           --header=NAME:BODY           set additional request header
+#
+#   xxx.cgi server [[hostname:]port]
+#
+# == client mode
+#
+# A webapp script should be invoked as follows in the client mode.
+# 
+#   xxx.cgi [options] [/path_info] [?query_string]
 #
 # For example, hello.cgi, as follows, can be invoked from command line.
 #
@@ -102,6 +115,28 @@
 #   Content-Length: 31
 #
 #   ^_M-^K^H^@^O^VM-TA^@^CM-sHM-MM-IM-IM-w^X%F^RM-A^E^@ZTsDM-u^A^@^@
+#
+# == server mode
+#
+# A webapp script should be invoked as follows in the server mode.
+#
+#   xxx.cgi server [[hostname:]port]
+#
+# If _port_ is specified, the server listens the specified port.
+# Otherwise, some non-used port is selected.
+#
+# If _hostname_ is specified, listening socket is bound to the specified hostname.
+#
+#   % ./hello.cgi server
+#   http://hostname:38846/
+#   [2005-02-19 10:29:26] INFO  WEBrick 1.3.1
+#   [2005-02-19 10:29:26] INFO  ruby 1.9.0 (2005-02-17) [i686-linux]
+#   [2005-02-19 10:29:26] INFO  WEBrick::HTTPServer#start: pid=9280 port=38846
+#   ...
+#
+# In the server mode, the web application is located to the root ("/").
+# I.e. WebApp#script_name returns "".
+#
 
 require 'optparse'
 
@@ -109,6 +144,53 @@ class WebApp
   class Manager
     # CLI (command line interface)
     def run_cli
+      if ARGV[0] == 'server'
+        ARGV.shift
+        run_cli_server
+      else
+        run_cli_client
+      end
+    end
+
+    def run_cli_server
+      require 'webrick'
+      config = {}
+      case ARGV[0]
+      when nil
+        config = {
+          :Port => TCPServer.open(0) {|s| s.addr[1] }
+        }
+      when /:(\d+)\z/
+        config = {
+          :ServerName => $`,
+          :BindAddress => $`,
+          :Port => $1.to_i
+        }
+      when /\A\d+\z/
+        config = {
+          :Port => ARGV[0].to_i
+        }
+      else
+        raise ArgumentError, "unexpected port: #{ARGV[0].inspect}"
+      end
+
+      servlet = WEBrick::HTTPServlet::ProcHandler.new(run_webrick)
+      Thread.current[:webrick_load_servlet] = nil
+
+      top_uri = "http://"
+      top_uri << (config[:BindAddress] || config[:ServerName] || WEBrick::Utils.getservername)
+      top_uri << ":#{config[:Port]}" if config[:Port] != 80
+      top_uri << '/'
+      puts top_uri
+
+      httpd = WEBrick::HTTPServer.new(config)
+      trap(:INT){ httpd.shutdown }
+      httpd.mount("/", servlet)
+      httpd.start
+      exit 0
+    end
+
+    def run_cli_client
       opt_output = '-'
       opt_cern_meta = false
       opt_server_name = 'localhost'

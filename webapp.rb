@@ -7,6 +7,7 @@
 # * works under WEBrick.
 #   WEBrick based server must require "webapp/webrick-servlet", though.
 #   link:files/webapp/webrick-servlet_rb.html
+# * works as a standalone http server without modification
 # * works as usual command (CLI) for debugging and static content generation.
 #   link:files/webapp/cli_rb.html
 #     script.cgi [options] [/path_info] [?query_string]

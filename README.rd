@@ -6,6 +6,7 @@
 * works under CGI, FastCGI and mod_ruby without modification
 * works under WEBrick
   (WEBrick based server must require "webapp/webrick-servlet", though.)
+* works as a standalone http server without modification
 * works as usual command (CLI) for debugging and static content generation.
     xxx.cgi [options] [/path_info] [?query_string]
 * path_info aware relative URI generation
@@ -66,6 +67,15 @@ It can be used for debugging and static content generation.
   Content-Length: 13
 
   Hello World.
+
+The script also works as a standalone http server.
+
+  % ./hello.cgi server
+  http://serein:38846/
+  [2005-02-19 10:29:26] INFO  WEBrick 1.3.1
+  [2005-02-19 10:29:26] INFO  ruby 1.9.0 (2005-02-17) [i686-linux]
+  [2005-02-19 10:29:26] INFO  WEBrick::HTTPServer#start: pid=9280 port=38846
+  ...
 
 == TODO
 
