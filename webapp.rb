@@ -88,7 +88,6 @@ class WebApp
       end
     }
     output_response =  lambda {|res|
-      res.output_cgi_status_field($stdout)
       rbx_request.status_line = "#{res.status_line}"
       res.each_header {|k, v|
         rbx_request.headers_out[k] = v
@@ -381,6 +380,10 @@ class WebApp
 
     def output_cgi_status_field(out) # :nodoc:
       out << "Status: #{self.status_line}\n"
+    end
+
+    def content_type=(media_type)
+      set_header 'Content-Type', media_type
     end
   end
 end
