@@ -1,1 +1,2 @@
+# set real pathname to SQLite database file.
 db_path: /absolute/path/to/sqlite/database/file
