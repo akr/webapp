@@ -110,6 +110,7 @@
 require 'stringio'
 require 'forwardable'
 require 'pathname'
+require 'zlib'
 require 'htree'
 require 'webapp/urigen'
 require 'webapp/message'
@@ -533,7 +534,6 @@ class WebApp
       # xxx: parse the Accept-Encoding field body
       if accept_encoding = webapp.get_request_header('Accept-Encoding') and
          /gzip/ =~ accept_encoding
-        require 'zlib'
         level ||= Zlib::DEFAULT_COMPRESSION
         content = res.body_object.string
         Zlib::GzipWriter.wrap(StringIO.new(gzipped = ''), level) {|gz|
