@@ -534,7 +534,7 @@ class WebApp
 end
 
 # WebApp is a main routine of web application.
-# It should be called from a toplevel of a CGI/FastCGI/mod_ruby script.
+# It should be called from a toplevel of a CGI/FastCGI/mod_ruby/WEBrick script.
 #
 # WebApp yields with an object of the class WebApp.
 # The object contains request and response.
@@ -555,7 +555,7 @@ def WebApp(application_class=Object, &block) # :yields: webapp
   elsif ENV.include?('REQUEST_METHOD')
     run = lambda { webapp.run_cgi }
   else
-    raise "not CGI/FastCGI/mod_ruby environment."
+    raise "not CGI/FastCGI/mod_ruby/WEBrick environment."
   end
   if Thread.current[:webapp_delay]
     Thread.current[:webapp_proc] = run

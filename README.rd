@@ -4,18 +4,28 @@
 
 * very easy-to-use API
 * works under CGI, FastCGI and mod_ruby without modification
-* works uner WEBrick.
+* works uner WEBrick
   (WEBrick based server must require "webapp/webrick-servlet", though.)
 * path_info aware relative URI generation
 * HTML form parameter varidation by HTML form (sample/query.*)
 
+== Home Page
+
+((<URL:http://cvs.m17n.org/~akr/webapp/>))
+
+== Download
+
+* ((<URL:http://cvs.m17n.org/viewcvs/ruby/webapp.tar.gz>))
+
 == How to Install
 
-Just a single command as follows.
-
-% ruby install.rb
+  % ruby install.rb
 
 To see the list of files to install: ruby install.rb -n
+
+== Reference Manual
+
+((<URL:doc/index.html>))
 
 == Example
 
@@ -49,3 +59,10 @@ In this case, the script filename should be "hello.webrick".
 
 * Ruby 1.8
 * htree 0.2
+
+== License
+
+Ruby's
+
+== Author
+Tanaka Akira <akr@m17n.org>
