@@ -9,9 +9,12 @@
 #  
 #   require 'webapp'
 #  
-#   WebApp {|req, res|
-#     res.header_object.add 'Content-Type', 'text/plain'
-#     res.body.puts Time.now
+#   WebApp {|request, response|
+#     response.header_object.add 'Content-Type', 'text/plain'
+#     response.body_object.puts Time.now
+#     request.header_object.each {|k, v|
+#       response.body_object.puts "#{k}: #{v}"
+#     }
 #   }
 
 require 'stringio'
@@ -24,7 +27,7 @@ module WebApp
       req.make_request_header_from_cgi_env(ENV)
       if ENV.include?('CONTENT_LENGTH')
         len = env['CONTENT_LENGTH'].to_i
-        req.body << STDIN.read(len)
+        req.body_object << STDIN.read(len)
       end
       yield req, res
     }
@@ -40,7 +43,7 @@ module WebApp
       trap_exception(req, res) {
         req.make_request_header_from_cgi_env(fcgi_request.env)
         if content = fcgi_request.in.read
-          req.body << content
+          req.body_object << content
         end
         yield req, res
       }
@@ -57,7 +60,7 @@ module WebApp
     trap_exception(req, res) {
       req.make_request_header_from_cgi_env(rbx_request.subprocess_env)
       if content = rbx_request.read
-        req.body << content
+        req.body_object << content
       end
       yield req, res
     }
@@ -66,7 +69,7 @@ module WebApp
     res.header_object.each {|k, v|
       rbx_request.headers_out[k] = v
     }
-    rbx_request.write res.body.string
+    rbx_request.write res.body_object.string
   end
 
   def WebApp.trap_exception(req, res)
@@ -76,9 +79,9 @@ module WebApp
       res.status_line = '500 Internal Server Error'
       res.header_object.clear
       res.header_object.add 'Content-Type', 'text/plain'
-      res.body.truncate(0)
-      res.body.print "#{e.message} (#{e.class})\n"
-      e.backtrace.each {|f| res.body.puts f }
+      res.body_object.truncate(0)
+      res.body_object.print "#{e.message} (#{e.class})\n"
+      e.backtrace.each {|f| res.body_object.puts f }
     end
   end
 
@@ -143,18 +146,18 @@ module WebApp
         raise ArgumentError, "unexpected header argument: #{header.inspect}"
       end
       raise ArgumentError, "unexpected body: #{body.inspect}" unless body.respond_to? :to_str
-      @body = StringIO.new(body.to_str)
+      @body_object = StringIO.new(body.to_str)
     end
-    attr_reader :body
+    attr_reader :body_object
     def header_object() @header end
 
     def output_message(out)
-      content = @body.length
+      content = @body_object.length
       @header.each {|k, v|
         out << "#{k}: #{v}\n"
       }
       out << "\n"
-      out << @body.string
+      out << @body_object.string
     end
 
   end
