@@ -1,6 +1,6 @@
 Options +ExecCGI
 
-DirectoryIndex index.cgi
+DirectoryIndex index.fcgi index.rbx index.cgi
 IndexOptions SuppressDescription SuppressLastModified SuppressSize
 
 Order Deny,Allow
