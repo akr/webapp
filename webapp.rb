@@ -9,7 +9,7 @@
 #   link:files/webapp/webrick-servlet_rb.html
 # * works as usual command (CLI) for debugging and static content generation.
 #   link:files/webapp/cli_rb.html
-#     xxx.cgi [options] [/path_info] [?query_string]
+#     script.cgi [options] [/path_info] [?query_string]
 # * path_info aware relative URI generation.
 # * HTML form parameter validation by HTML form. (sample/query.cgi)
 # * automatic Content-Type generation.
@@ -364,7 +364,7 @@ End
   end
 
   def query_html_post_application_x_www_form_urlencoded
-    if /\Apost\z/i =~ @request.request_method # xxx: should be checkless?
+    if /\Apost\z/i =~ @request.request_method # xxx: should not check?
       q = QueryString.primitive_new_for_raw_query_string(@request.body_object.read)
       q.decode_as_application_x_www_form_urlencoded
     else
