@@ -12,7 +12,8 @@ class WebApp
       opt_script_name = "/#{File.basename($0)}"
       opt_remote_addr = '127.0.0.1'
       ARGV.options {|q|
-        q.banner = "#{File.basename $0} [options] /path_info ?query_string"
+        q.banner = "#{File.basename $0} [options] [/path_info] [?query_string]"
+        q.def_option('-h', '--help', 'show this message') { puts q; exit(0) }
         q.def_option('-o FILE', '--output=FILE', 'set output file') {|arg| opt_output = arg.untaint }
         q.def_option('--cern-meta', 'output header as CERN httpd metafile') { opt_cern_meta = true }
         q.def_option('--server-name=STRING', 'set server name') {|arg| opt_server_name = arg }

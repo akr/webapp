@@ -4,8 +4,10 @@
 
 * very easy-to-use API
 * works under CGI, FastCGI and mod_ruby without modification
-* works uner WEBrick
+* works under WEBrick
   (WEBrick based server must require "webapp/webrick-servlet", though.)
+* works as usual command (non-interactive, unlike cgi.rb and CGI.pm)
+  xxx.cgi [options] [/path_info] [?query_string]
 * path_info aware relative URI generation
 * HTML form parameter varidation by HTML form (sample/query.cgi)
 * automatic Content-Type generation

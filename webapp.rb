@@ -7,6 +7,8 @@
 # * works uner WEBrick.
 #   WEBrick based server must require "webapp/webrick-servlet", though.
 #   link:files/webapp/webrick-servlet_rb.html
+# * works as usual command (non-interactive, unlike cgi.rb and CGI.pm)
+#   xxx.cgi [options] [/path_info] [?query_string]
 # * path_info aware relative URI generation.
 # * HTML form parameter varidation by HTML form. (sample/query.cgi)
 # * automatic Content-Type generation.
@@ -14,7 +16,6 @@
 #   (URL will be http://host/path_info?query.
 #   No path component to specify a web application.)
 #   link:files/webapp/webrick-servlet_rb.html
-# * runnable from command line (non-interactive, unlike cgi.rb and CGI.pm)
 #
 # == Example
 #
