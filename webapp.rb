@@ -249,7 +249,12 @@ class WebApp
       output_response =  lambda {|res|
         rbx_request.status_line = "#{res.status_line}"
         res.header_object.each {|k, v|
-          rbx_request.headers_out[k] = v
+          case k
+          when /\AContent-Type\z/i
+            rbx_request.content_type = v
+          else
+            rbx_request.headers_out[k] = v
+          end
         }
         rbx_request.write res.body_object.string
       }
@@ -337,7 +342,7 @@ class WebApp
       begin
         yield
       rescue Exception => e
-        if localhost? req.remote_addr
+        if localhost? req.remote_addr # xxx: accept devlopper's addresses if specified.
           generate_debug_page(req, res, e)
         else
           generate_error_page(req, res, e)
@@ -356,10 +361,10 @@ class WebApp
       res.status_line = '500 Internal Server Error'
       header = res.header_object
       header.clear
+      header.add 'Content-Type', 'text/html'
       body = res.body_object
       body.rewind
       body.truncate(0)
-      header.add 'Content-Type', 'text/html'
       body.puts <<'End'
 <html><head><title>500 Internal Server Error</title></head>
 <body><h1>500 Internal Server Error</h1>
