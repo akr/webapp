@@ -6,8 +6,7 @@
 * works under CGI, FastCGI and mod_ruby without modification
 * works under WEBrick
   (WEBrick based server must require "webapp/webrick-servlet", though.)
-* works as usual command (CLI) which
-  can be used for debugging and static content generation.
+* works as usual command (CLI) for debugging and static content generation.
     xxx.cgi [options] [/path_info] [?query_string]
 * path_info aware relative URI generation
 * HTML form parameter validation by HTML form (sample/query.cgi)

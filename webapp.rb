@@ -7,8 +7,7 @@
 # * works under WEBrick.
 #   WEBrick based server must require "webapp/webrick-servlet", though.
 #   link:files/webapp/webrick-servlet_rb.html
-# * works as usual command (CLI) which
-#   can be used for debugging and static content generation.
+# * works as usual command (CLI) for debugging and static content generation.
 #   link:files/webapp/cli_rb.html
 #     xxx.cgi [options] [/path_info] [?query_string]
 # * path_info aware relative URI generation.
