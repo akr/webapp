@@ -1,9 +1,6 @@
 #!/usr/bin/env ruby
 
 require "webapp"
-require "htree" # http://raa.ruby-lang.org/project/htree/
-require "sqlite" # http://raa.ruby-lang.org/project/sqlite-ruby/
-require 'yaml'
 
 def sqlite
   if !defined?($db_conn)
@@ -110,6 +107,10 @@ End
 end
 
 WebApp {|webapp|
+  require 'yaml'
+  require "htree" # http://raa.ruby-lang.org/project/htree/
+  require "sqlite" # http://raa.ruby-lang.org/project/sqlite-ruby/
+
   unless defined? $config
     $config = YAML.load(webapp.resource_path("view-sqlite.yml").read)
     $db_path = $config.fetch('db_path')
