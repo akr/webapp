@@ -42,9 +42,9 @@ class URIGenTest < Test::Unit::TestCase
   end
 
   def test_reluri_colon
-    assert_equal("a%3Ab", 
+    assert_equal("./a:b", 
       WebApp::URIGen.new('http', "host", 80, "/foo.cgi", '').make_relative_uri({:script=>"/a:b"}).to_s)
-    assert_equal("a%3Ab", 
+    assert_equal("./a:b", 
       WebApp::URIGen.new('http', "host", 80, "/foo.cgi", '/bar').make_relative_uri({:path_info=>"a:b"}).to_s)
   end
 

@@ -66,8 +66,9 @@ class WebApp
       rel_path = './' if rel_path.empty?
 
       rel_path.gsub!(%r{[^/]+}) {|segment| pchar_escape(segment) }
-      if /\A[A-Za-z][A-Za-z0-9+\-.]*:/ =~ rel_path # It seems absolute URI.
-        rel_path.sub!(/:/, '%3A')
+      if %r{\A/} =~ rel_path ||
+         /:/ =~ rel_path[%r{\A[^/]*}] # It seems absolute URI.
+        rel_path = './' + rel_path
       end
 
       if query
