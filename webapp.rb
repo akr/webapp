@@ -606,7 +606,19 @@ def WebApp(application_class=Object, &block) # :yields: webapp
     run = lambda { manager.run_rbx }
   elsif Thread.current[:webrick_load_servlet]
     run = lambda { manager.run_webrick }
-  elsif $stdin.respond_to?(:stat) && $stdin.stat.socket?
+  elsif STDIN.respond_to?(:stat) && STDIN.stat.socket? &&
+        begin
+          require 'socket'
+          # getpeername(FCGI_LISTENSOCK_FILENO) causes ENOTCONN for FastCGI
+          # cf. http://www.fastcgi.com/devkit/doc/fcgi-spec.html
+          sock = UNIXSocket.for_fd(0)
+          sock.peeraddr
+          false
+        rescue Errno::ENOTCONN
+          true
+        rescue SystemCallError
+          false
+        end
     run = lambda { manager.run_fcgi }
   elsif ENV.include?('REQUEST_METHOD')
     run = lambda { manager.run_cgi }
