@@ -18,6 +18,7 @@
 #   No path component to specify a web application.)
 #   link:files/webapp/webrick-servlet_rb.html
 # * a response is gzipped automatically if the browser accepts.
+# * Last-Modified: and If-Modified-Since: support for usual files.
 #
 # == Example
 #
@@ -84,7 +85,6 @@
 #
 
 require 'stringio'
-require 'forwardable'
 require 'pathname'
 require 'zlib'
 require 'htree'
@@ -107,29 +107,37 @@ class WebApp
       @request.script_name, @request.path_info)
   end
 
-  extend Forwardable
-  def_delegators :@response_body, :<<, :print, :printf, :putc, :puts, :write
+  def <<(str) @response_body << str end
+  def print(*strs) @response_body.print(*strs) end
+  def printf(fmt, *args) @response_body.printf(fmt, *args) end
+  def putc(ch) @response_body.putc ch end
+  def puts(*strs) @response_body.puts(*strs) end
+  def write(str) @response_body.write str end
 
-  def_delegator :@request_header, :each, :each_request_header
-  def_delegator :@request_header, :[], :get_request_header
+  def each_request_header(&block) # :yields: field_name, field_body
+    @request_header.each(&block)
+  end
+  def get_request_header(field_name) @request_header[field_name] end
 
-  def_delegator :@request, :request_method, :request_method
-  def_delegator :@request, :server_name, :server_name
-  def_delegator :@request, :server_port, :server_port
-  def_delegator :@request, :script_name, :script_name
-  def_delegator :@request, :path_info, :path_info
-  def_delegator :@request, :query_string, :query_string
-  def_delegator :@request, :server_protocol, :server_protocol
-  def_delegator :@request, :remote_addr, :remote_addr
-  def_delegator :@request, :content_type, :request_content_type
+  def request_method() @request.request_method end
+  def server_name() @request.server_name end
+  def server_port() @request.server_port end
+  def script_name() @request.script_name end
+  def path_info() @request.path_info end
+  def query_string() @request.query_string end
+  def server_protocol() @request.server_protocol end
+  def remote_addr() @request.remote_addr end
+  def request_content_type() @request.content_type end
 
-  def_delegator :@response_header, :set, :set_header
-  def_delegator :@response_header, :add, :add_header
-  def_delegator :@response_header, :remove, :remove_header
-  def_delegator :@response_header, :clear, :clear_header
-  def_delegator :@response_header, :has?, :has_header?
-  def_delegator :@response_header, :[], :get_header
-  def_delegator :@response_header, :each, :each_header
+  def set_header(field_name, field_body) @response_header.set(field_name, field_body) end
+  def add_header(field_name, field_body) @response_header.add(field_name, field_body) end
+  def remove_header(field_name) @response_header.remove(field_name) end
+  def clear_header() @response_header.clear end
+  def has_header?(field_name) @response_header.has?(field_name) end
+  def get_header(field_name) @response_header[field_name] end
+  def each_header(&block) # :yields: field_name, field_body
+    @response_header.each(&block)
+  end
 
   def content_type=(media_type)
     @response_header.set 'Content-Type', media_type

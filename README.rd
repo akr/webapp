@@ -15,6 +15,7 @@
   (URL will be http://host/path_info?query.
   No path component to specify a web application.)
 * a response is gzipped automatically if the browser accepts.
+* Last-Modified: and If-Modified-Since: support for usual files.
 
 == Home Page
 
