@@ -39,10 +39,12 @@
 require 'stringio'
 require 'forwardable'
 require 'webapp/htmlform'
+require 'pathname'
 require 'htree'
 
 class WebApp
-  def initialize(request, response) # :nodoc:
+  def initialize(manager, request, response) # :nodoc:
+    @manager = manager
     @request = request
     @request_header = request.header_object
     @request_body = request.body_object
@@ -81,6 +83,24 @@ class WebApp
   end
   def content_type
     @response_header.set 'Content-Type', media_type
+  end
+
+  # returns a Pathname object.
+  # _path_ is interpreted as a relative path from the directory
+  # which a web application exists.
+  #
+  # If /foo/bar/baz.cgi is a web application which WebApp {} calls,
+  # webapp.resource_path("qux") returns a pathname points to /foo/bar/qux.
+  def resource_path(path)
+    @manager.resource_basedir + path
+  end
+
+  # call-seq:
+  #   open_resource(path)
+  #   open_resource(path) {|io| ... }
+  # opens _path_ as relative from a web application directory.
+  def open_resource(path, &block) 
+    resource_path(path).open(&block)
   end
 
   # call-seq:
@@ -125,6 +145,7 @@ class WebApp
   def make_relative_uri(hash={})
     @requri.make_relative_uri(hash)
   end
+  alias reluri make_relative_uri
 
   def query_html_get_application_x_www_form_urlencoded
     @request.query_string.decode_as_application_x_www_form_urlencoded
@@ -200,7 +221,9 @@ class WebApp
     def initialize(app_class, app_block)
       @app_class = app_class
       @app_block = app_block
+      @resource_basedir = Pathname.new(eval("__FILE__", app_block)).dirname
     end
+    attr_reader :resource_basedir
 
     # CGI, Esehttpd
     def run_cgi
@@ -288,7 +311,7 @@ class WebApp
         setup_request.call(req)
         req.freeze
         req.body_object.rewind
-        webapp = WebApp.new(req, res)
+        webapp = WebApp.new(self, req, res)
         app = @app_class.new
         @app_block.call(webapp); complete_response(res); next # xxx: avoid core dump [ruby-dev:24228]
         #if @app_block

@@ -111,7 +111,7 @@ end
 
 WebApp {|webapp|
   unless defined? $config
-    $config = YAML.load(File.read("#{File.dirname(__FILE__)}/view-sqlite.yml"))
+    $config = YAML.load(webapp.resource_path("view-sqlite.yml").read)
     $db_path = $config.fetch('db_path')
   end
 
