@@ -243,7 +243,7 @@ End
   # as http://host/foo/bar.cgi/baz/qux.
   #
   #   webapp.reluri(:path_info=>"/hoge") => URI("../hoge")
-  #   webapp.reluri(:path_info=>"/baz/fuga") => URI("fuga"
+  #   webapp.reluri(:path_info=>"/baz/fuga") => URI("fuga")
   #   webapp.reluri(:path_info=>"/baz/") => URI("./")
   #   webapp.reluri(:path_info=>"/") => URI("../")
   #   webapp.reluri() => URI("../../bar.cgi")
