@@ -7,7 +7,8 @@
 # * works under WEBrick.
 #   WEBrick based server must require "webapp/webrick-servlet", though.
 #   link:files/webapp/webrick-servlet_rb.html
-# * works as usual command
+# * works as usual command (CLI) which
+#   can be used for debugging and static content generation.
 #   link:files/webapp/cli_rb.html
 #     xxx.cgi [options] [/path_info] [?query_string]
 # * path_info aware relative URI generation.
@@ -25,7 +26,7 @@
 # without any modification.
 # It also works as WEBrick servlet (*.webrick) if the WEBrick based server
 # requires "webapp/webapp/webrick-servlet".
-# It also works as usual command line.
+# It also works as usual command.
 #
 #   #!/path/to/ruby
 #
