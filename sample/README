@@ -7,10 +7,10 @@ This directory contains several example for webapp.
 
 = How to Install
 
-% cd .../webapp/sample
-% make
-% mkdir ~/public_html/webapp-sample
-% cp cgi-bin/*.cgi ~/public_html/webapp-sample
+  % cd .../webapp/sample
+  % make
+  % mkdir ~/public_html/webapp-sample
+  % cp cgi-bin/*.cgi ~/public_html/webapp-sample
 
 The above "make" generates wrappers for each cgi scripts.
 Since cgi-bin/*.cgi are just a wrapper, actual scripts in sample directory are
@@ -21,10 +21,15 @@ still required to run.
 If your web server supports FastCGI or mod_ruby, sample scripts can be run
 on them.
 
-% cd ~/public_html/webapp-sample
-% cp hello.cgi hello.fcgi
-% cp hello.cgi hello.rbx
+  % cd ~/public_html/webapp-sample
+  % cp hello.cgi hello.fcgi
+  % cp hello.cgi hello.rbx
 
 Since webapp scripts can run under CGI, FastCGI and mod_ruby without
 modification, just a cp is enough to setup.
 
+== WEBrick
+
+  % cd ~/public_html/webapp-sample
+  % cp hello.cgi hello.webrick
+  % ruby .../webapp/webapp/webrick-servlet.rb
