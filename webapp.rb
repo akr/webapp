@@ -500,7 +500,7 @@ class WebApp
         end
         res.header_object.set 'Content-Type', content_type if content_type
       end
-      gzip_content(webapp, res)
+      gzip_content(webapp, res) unless res.header_object.has? 'Content-Encoding'
       unless res.header_object.has? 'Content-Length'
         res.header_object.set 'Content-Length', res.body_object.length.to_s
       end
