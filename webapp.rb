@@ -164,19 +164,30 @@ class WebApp
     str
   end
 
-  LoadedWebAppProcs = {}
-  def WebApp.run_webapp_via_stub(path)
-    unless LoadedWebAppProcs[path]
+  LoadedWebAppProcedures = {}
+  def WebApp.load_webapp_procedure(path)
+    unless LoadedWebAppProcedures[path]
       begin
         Thread.current[:webapp_delay] = true
         load path, true
-        LoadedWebAppProcs[path] = Thread.current[:webapp_proc]
+        LoadedWebAppProcedures[path] = Thread.current[:webapp_proc]
       ensure
         Thread.current[:webapp_delay] = nil
         Thread.current[:webapp_proc] = nil
       end
     end
-    LoadedWebAppProcs[path].call
+    unless LoadedWebAppProcedures[path]
+      raise RuntimeError, "not a web application: #{path}"
+    end
+    LoadedWebAppProcedures[path]
+  end
+
+  def WebApp.run_webapp_via_stub(path)
+    if Thread.current[:webapp_delay]
+      load path, true
+      return
+    end
+    WebApp.load_webapp_procedure(path).call
   end
 
   class Manager
@@ -220,7 +231,7 @@ class WebApp
       }
     end
 
-    # mod_ruby
+    # mod_ruby with Apache::RubyRun
     def run_rbx
       rbx_request = Apache.request
       setup_request = lambda {|req|
@@ -236,6 +247,26 @@ class WebApp
         }
         res.body_object.rewind
         rbx_request.write res.body_object.read
+      }
+      primitive_run(setup_request, output_response)
+    end
+
+    # WEBrick with webapp/webrick-servlet.rb
+    def run_webrick
+      webrick_req, webrick_res = Thread.current[:webapp_webrick]
+      setup_request = lambda {|req|
+        req.make_request_header_from_cgi_env(webrick_req.meta_vars)
+        webrick_req.body {|chunk|
+          req.body_object << chunk
+        }
+      }
+      output_response =  lambda {|res|
+        webrick_res.status = res.status_line.to_i
+        res.header_object.each {|k, v|
+          webrick_res[k] = v
+        }
+        res.body_object.rewind
+        webrick_res.body = res.body_object.read
       }
       primitive_run(setup_request, output_response)
     end
@@ -514,6 +545,8 @@ def WebApp(application_class=Object, &block) # :yields: webapp
   webapp = WebApp::Manager.new(application_class, block)
   if defined?(Apache::Request) && Apache.request.kind_of?(Apache::Request)
     run = lambda { webapp.run_rbx }
+  elsif Thread.current[:webapp_webrick]
+    run = lambda { webapp.run_webrick }
   elsif $stdin.respond_to?(:stat) && $stdin.stat.socket?
     run = lambda { webapp.run_fcgi }
   elsif ENV.include?('REQUEST_METHOD')
