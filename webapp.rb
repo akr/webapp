@@ -10,7 +10,7 @@
 #   require 'webapp'
 #  
 #   WebApp {|request, response|
-#     response.header_object.set 'Content-Type', 'text/plain'
+#     response.set_header 'Content-Type', 'text/plain'
 #     response.puts <<"End"
 #   current time: #{Time.now}
 #   pid: #{$$}
@@ -27,7 +27,7 @@
 #   
 #   --- request headers ---
 #   End
-#     request.header_object.each {|k, v|
+#     request.each_header {|k, v|
 #       response.puts "#{k}: #{v}"
 #     }
 #   }
@@ -84,7 +84,7 @@ module WebApp
     output_response =  lambda {|res|
       res.output_cgi_status_field($stdout)
       rbx_request.status_line = "#{res.status_line}"
-      res.header_object.each {|k, v|
+      res.each_header {|k, v|
         rbx_request.headers_out[k] = v
       }
       res.rewind
@@ -109,8 +109,8 @@ module WebApp
       yield
     rescue Exception => e
       res.status_line = '500 Internal Server Error'
-      res.header_object.clear
-      res.header_object.add 'Content-Type', 'text/plain'
+      res.clear_header
+      res.add_header 'Content-Type', 'text/plain'
       res.truncate(0)
       res.puts "#{e.message} (#{e.class})"
       e.backtrace.each {|f| res.puts f }
@@ -217,22 +217,22 @@ module WebApp
       nil
     end
 
-    def make_frozen_copy_string(str)
+    def make_frozen_string(str)
       raise ArgumentError, "not a string: #{str.inspect}" unless str.respond_to? :to_str
       str = str.to_str
       str = str.dup.freeze unless str.frozen?
       str
     end
-    private :make_frozen_copy_string
+    private :make_frozen_string
 
     def add(field_name, field_body)
-      field_name = make_frozen_copy_string(field_name)
-      field_body = make_frozen_copy_string(field_body)
+      field_name = make_frozen_string(field_name)
+      field_body = make_frozen_string(field_body)
       @fields << [field_name.downcase.freeze, field_name, field_body]
     end
 
     def set(field_name, field_body)
-      field_name = make_frozen_copy_string(field_name)
+      field_name = make_frozen_string(field_name)
       remove(field_name)
       add(field_name, field_body)
     end
@@ -285,7 +285,6 @@ module WebApp
       raise ArgumentError, "unexpected body: #{body.inspect}" unless body.respond_to? :to_str
       @body_object = StringIO.new(body.to_str)
     end
-    attr_reader :header_object
 
     def freeze # :nodoc:
       @header_object.freeze
@@ -313,6 +312,12 @@ module WebApp
       :read, :readchar, :readline, :readlines,
       :rewind, :seek, :ungetc, :write,
       :truncate
+
+    def_delegator :@header_object, :set, :set_header
+    def_delegator :@header_object, :add, :add_header
+    def_delegator :@header_object, :clear, :clear_header
+    def_delegator :@header_object, :[], :get_header
+    def_delegator :@header_object, :each, :each_header
   end
 
   class Request < Message
