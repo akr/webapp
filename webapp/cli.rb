@@ -127,7 +127,6 @@ class WebApp
         q.def_option('--remote-addr=STRING', 'set remote IP address') {|arg| opt_remote_addr = arg }
         q.def_option('--header=NAME:BODY', 'set additional request header') {|arg| opt_headers << arg.split(/:/, 2) }
         q.parse!
-        true
       } or exit(1)
       if ARGV[0] && %r{\A/} =~ ARGV[0]
         path_info = ARGV.shift
