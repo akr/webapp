@@ -466,12 +466,17 @@ class WebApp
         req.body_object.rewind
         webapp = WebApp.new(self, req, res)
         app = @app_class.new
-        @app_block.call(webapp); complete_response(res); next # xxx: avoid core dump [ruby-dev:24228]
-        #if @app_block
-        #  class << app; self end.__send__(:define_method, :webapp_main, &@app_block)
-        #end
-        #app.webapp_main(webapp)
-        #complete_response(res)
+        if RUBY_RELEASE_DATE <= "2004-09-13" # xxx: avoid core dump [ruby-dev:24228]
+          warn 'self in WebApp block is not replaced.'
+          @app_block.call(webapp)
+          complete_response(res)
+          next
+        end
+        if @app_block
+          class << app; self end.__send__(:define_method, :webapp_main, &@app_block)
+        end
+        app.webapp_main(webapp)
+        complete_response(res)
       }
       output_response.call(res)
     end
@@ -587,6 +592,12 @@ end
 # In the block, self is replaced by newly created _application_class_ object.
 #
 # WebApp rise $SAFE to 1.
+#
+# WebApp catches all kind of exception raised in the block.
+# If HTTP connection is made from localhost, the backtrace is sent back to
+# the browser.
+# Otherwise, the backtrace is sent to stderr usually which is redirected to
+# error.log.
 #
 def WebApp(application_class=Object, &block) # :yields: webapp
   $SAFE = 1 if $SAFE < 1

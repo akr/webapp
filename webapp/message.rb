@@ -14,6 +14,14 @@ class WebApp
       super
     end
 
+    def dup
+      result = Header.new
+      @fields.each {|_, k, v|
+        result.add(k, v)
+      }
+      result
+    end
+
     def clear
       @fields.clear
     end

@@ -60,7 +60,7 @@ In this case, the script filename should be "hello.webrick".
 
 == Requirements
 
-* Ruby 1.8
+* Ruby 1.8.2
 * htree 0.2
 * fcgi 0.8.4 (if you use FastCGI)
 * mod_ruby 1.2.2 (if you use mod_ruby)
