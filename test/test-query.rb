@@ -3,7 +3,7 @@ require 'webapp'
 
 class HTMLFormQueryTest < Test::Unit::TestCase
   def webapp_test(env, content='', &block)
-    manager = WebApp::Manager.new(Object, block)
+    manager = WebApp::Manager.new(block)
     setup_request = lambda {|req|
       req.make_request_header_from_cgi_env(env)
       req.body_object << content

@@ -371,8 +371,7 @@ class WebApp
   end
 
   class Manager
-    def initialize(app_class, app_block)
-      @app_class = app_class
+    def initialize(app_block)
       @app_block = app_block
       @resource_basedir = Pathname.new(eval("__FILE__", app_block)).dirname
     end
@@ -465,17 +464,7 @@ class WebApp
         req.freeze
         req.body_object.rewind
         webapp = WebApp.new(self, req, res)
-        app = @app_class.new
-        if RUBY_RELEASE_DATE <= "2004-09-13" # xxx: avoid core dump [ruby-dev:24228]
-          warn 'self in WebApp block is not replaced.'
-          @app_block.call(webapp)
-          complete_response(res)
-          next
-        end
-        if @app_block
-          class << app; self end.__send__(:define_method, :webapp_main, &@app_block)
-        end
-        app.webapp_main(webapp)
+        @app_block.call(webapp)
         complete_response(res)
       }
       output_response.call(res)
@@ -589,8 +578,6 @@ end
 # WebApp yields with an object of the class WebApp.
 # The object contains request and response.
 #
-# In the block, self is replaced by newly created _application_class_ object.
-#
 # WebApp rise $SAFE to 1.
 #
 # WebApp catches all kind of exception raised in the block.
@@ -599,9 +586,9 @@ end
 # Otherwise, the backtrace is sent to stderr usually which is redirected to
 # error.log.
 #
-def WebApp(application_class=Object, &block) # :yields: webapp
+def WebApp(&block) # :yields: webapp
   $SAFE = 1 if $SAFE < 1
-  manager = WebApp::Manager.new(application_class, block)
+  manager = WebApp::Manager.new(block)
   if defined?(Apache::Request) && Apache.request.kind_of?(Apache::Request)
     run = lambda { manager.run_rbx }
   elsif Thread.current[:webrick_load_servlet]

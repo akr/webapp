@@ -24,7 +24,7 @@ class WebApPTest < Test::Unit::TestCase
     env['REMOTE_ADDR'] = '127.0.0.1'
     env['CONTENT_TYPE'] = content
     exc = nil
-    manager = WebApp::Manager.new(self, lambda {|webapp|
+    manager = WebApp::Manager.new(lambda {|webapp|
       begin
         block.call(webapp)
       rescue Exception
