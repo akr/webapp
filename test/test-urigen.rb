@@ -34,6 +34,20 @@ class URIGenTest < Test::Unit::TestCase
     check_reluri_2("bar.cgi?a+b=c+d", :query=>{'a b'=>'c d'})
   end
 
+  def test_reluri_unexpected
+    requri = WebApp::URIGen.new('http', "host", 80, "/foo.cgi", '')
+    assert_raise(ArgumentError) {
+      requri.make_relative_uri({:script_name=>"bar.cgi"})
+    }
+  end
+
+  def test_reluri_colon
+    assert_equal("a%3Ab", 
+      WebApp::URIGen.new('http', "host", 80, "/foo.cgi", '').make_relative_uri({:script=>"/a:b"}).to_s)
+    assert_equal("a%3Ab", 
+      WebApp::URIGen.new('http', "host", 80, "/foo.cgi", '/bar').make_relative_uri({:path_info=>"a:b"}).to_s)
+  end
+
   def check_absuri(expected, hash)
     requri = WebApp::URIGen.new('http', "host", 80, "/foo/bar.cgi", "/baz/qux")
     assert_equal(expected, requri.make_absolute_uri(hash).to_s)

@@ -17,10 +17,20 @@ class WebApp
     attr_reader :base_uri
 
     def make_relative_uri(hash)
-      script = hash[:script]
-      path_info = hash[:path_info]
-      query = hash[:query]
-      fragment = hash[:fragment]
+      script = nil
+      path_info = nil
+      query = nil
+      fragment = nil
+      hash.each_pair {|k,v|
+        case k
+        when :script then script = v
+        when :path_info then path_info = v
+        when :query then query = v
+        when :fragment then fragment = v
+        else
+          raise ArgumentError, "unexpected: #{k} => #{v}"
+        end
+      }
 
       if !script
         script = @script_name
@@ -56,6 +66,9 @@ class WebApp
       rel_path = './' if rel_path.empty?
 
       rel_path.gsub!(%r{[^/]+}) {|segment| pchar_escape(segment) }
+      if /\A[A-Za-z][A-Za-z0-9+\-.]*:/ =~ rel_path # It seems absolute URI.
+        rel_path.sub!(/:/, '%3A')
+      end
 
       if query
         case query
