@@ -94,6 +94,8 @@ require 'webapp/message'
 require 'webapp/htmlform'
 
 class WebApp
+  WebAPPDevelopHost = ENV['WEBAPP_DEVELOP_HOST']
+
   def initialize(manager, request, response) # :nodoc:
     @manager = manager
     @request = request
@@ -590,7 +592,7 @@ End
       begin
         yield
       rescue Exception => e
-        if localhost? req.remote_addr # xxx: accept devlopper's addresses if specified.
+        if devlopper_host? req.remote_addr
           generate_debug_page(req, res, e)
         else
           generate_error_page(req, res, e)
@@ -598,14 +600,27 @@ End
       end
     end
 
-    def localhost?(addr)
-      addr == '127.0.0.1'
+    def devlopper_host?(addr)
+      return true if addr == '127.0.0.1'
+      return false if %r{\A(\d+)\.(\d+)\.(\d+)\.(\d+)\z} !~ addr
+      addr_arr = [$1.to_i, $2.to_i, $3.to_i, $4.to_i]
+      addr_bin = addr_arr.pack("CCCC").unpack("B*")[0]
+      case WebAPPDevelopHost
+      when %r{\A(\d+)\.(\d+)\.(\d+)\.(\d+)\z}
+        dev_arr = [$1.to_i, $2.to_i, $3.to_i, $4.to_i]
+        return true if dev_arr == addr_arr
+      when %r{\A(\d+)\.(\d+)\.(\d+)\.(\d+)/(\d+)\z}
+        dev_arr = [$1.to_i, $2.to_i, $3.to_i, $4.to_i]
+        dev_bin = dev_arr.pack("CCCC").unpack("B*")[0]
+        dev_len = $5.to_i
+        return true if addr_bin[0, dev_len] == dev_bin[0, dev_len]
+      end
+      return false
     end
 
     def generate_error_page(req, res, exc)
       backtrace = "#{exc.message} (#{exc.class})\n"
       exc.backtrace.each {|f| backtrace << f << "\n" }
-      $stderr.puts backtrace
       res.status_line = '500 Internal Server Error'
       header = res.header_object
       header.clear
@@ -658,10 +673,14 @@ end
 # WebApp rise $SAFE to 1.
 #
 # WebApp catches all kind of exception raised in the block.
-# If HTTP connection is made from localhost, the backtrace is sent back to
-# the browser.
+# If HTTP connection is made from localhost or a developper host,
+# the backtrace is sent back to the browser.
 # Otherwise, the backtrace is sent to stderr usually which is redirected to
 # error.log.
+# The developper hosts are specified by the environment variable 
+# WEBAPP_DEVELOP_HOST.
+# It may be an IP address such as "111.222.333.444" or
+# an network address such as "111.222.333.0/24".
 #
 def WebApp(&block) # :yields: webapp
   $SAFE = 1 if $SAFE < 1
