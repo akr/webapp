@@ -533,7 +533,8 @@ class WebApp
     def gzip_content(webapp, res, level=nil)
       # xxx: parse the Accept-Encoding field body
       if accept_encoding = webapp.get_request_header('Accept-Encoding') and
-         /gzip/ =~ accept_encoding
+         /gzip/ =~ accept_encoding and
+         /\A\037\213/ !~ res.body_object.string # already gzipped
         level ||= Zlib::DEFAULT_COMPRESSION
         content = res.body_object.string
         Zlib::GzipWriter.wrap(StringIO.new(gzipped = ''), level) {|gz|
