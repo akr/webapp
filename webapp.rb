@@ -608,9 +608,9 @@ def WebApp(application_class=Object, &block) # :yields: webapp
     run = lambda { manager.run_webrick }
   elsif STDIN.respond_to?(:stat) && STDIN.stat.socket? &&
         begin
-          require 'socket'
-          # getpeername(FCGI_LISTENSOCK_FILENO) causes ENOTCONN for FastCGI
+          # getpeername(FCGI_LISTENSOCK_FILENO) causes ENOTCONN on FastCGI
           # cf. http://www.fastcgi.com/devkit/doc/fcgi-spec.html
+          require 'socket'
           sock = Socket.for_fd(0)
           sock.getpeername
           false

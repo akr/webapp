@@ -12,7 +12,15 @@ class HTMLFormQueryTest < Test::Unit::TestCase
     output_response = lambda {|res|
       response = res
     }
-    manager.primitive_run(setup_request, output_response)
+    req = WebApp::Request.new
+    res = WebApp::Response.new
+    setup_request.call(req)
+    req.freeze
+    req.body_object.rewind
+    webapp = WebApp.new(manager, req, res)
+    yield webapp
+    manager.complete_response(res)
+    output_response.call(res)
     response
   end
 
