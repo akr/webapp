@@ -297,23 +297,25 @@ class WebApp
 
     def complete_response(res)
       unless res.header_object.has? 'Content-Type'
-        media_type = nil
-        charset = nil
-        fallback_media_type = nil
         case res.body_object.string
+        when /\A\211PNG\r\n\032\n/
+          content_type = 'image/png'
         when /\A#{HTree::Pat::XmlDecl_C}\s*#{HTree::Pat::DocType_C}/io
           charset = $3 || $4
           rootelem = $7
-          res.header_object.set 'Content-Type', make_xml_content_type(rootelem, charset)
+          content_type = make_xml_content_type(rootelem, charset)
         when /\A#{HTree::Pat::XmlDecl_C}\s*<(#{HTree::Pat::Name})[\s>]/io
           charset = $3 || $4
           rootelem = $7
-          res.header_object.set 'Content-Type', make_xml_content_type(rootelem, charset)
+          content_type = make_xml_content_type(rootelem, charset)
+        when /\A<html[\s>]/io
+          content_type = 'text/html'
         when /\0/
-          res.header_object.set 'Content-Type', 'application/octet-stream'
+          content_type = 'application/octet-stream'
         else
-          res.header_object.set 'Content-Type', 'text/plain'
+          content_type = 'text/plain'
         end
+        res.header_object.set 'Content-Type', content_type
       end
       unless res.header_object.has? 'Content-Length'
         res.header_object.set 'Content-Length', res.body_object.length.to_s
@@ -322,7 +324,7 @@ class WebApp
 
     def make_xml_content_type(rootelem, charset)
       case rootelem
-      when /\Ahtml\z/
+      when /\Ahtml\z/i
         result = 'text/html'
       else
         result = 'application/xml'
