@@ -8,7 +8,7 @@
   (WEBrick based server must require "webapp/webrick-servlet", though.)
 * path_info aware relative URI generation
 * HTML form parameter varidation by HTML form (sample/query.cgi)
-* complete Content-Type field if it is not specified
+* automatic Content-Type generation
 
 == Home Page
 
@@ -59,6 +59,8 @@ In this case, the script filename should be "hello.webrick".
 
 * Ruby 1.8
 * htree 0.2
+* fcgi 0.8.4 (if you use FastCGI)
+* mod_ruby 1.2.2 (if you use mod_ruby)
 
 == License
 
