@@ -1,18 +1,13 @@
 require 'webrick'
 
 class WebApp
-  class WEBrickServletHandler < WEBrick::HTTPServlet::AbstractServlet
-    def initialize(server, name)
-      super
-      @name = name
-    end
-
+  class WEBrickServletHandler
     LoadedServlets = {}
-    def load_servlet(name)
+    def WEBrickServletHandler.get_instance(config, name)
       unless LoadedServlets[name]
         begin
           Thread.current[:webrick_load_servlet] = true
-          load @name, true
+          load name, true
           if Thread.current[:webrick_load_servlet].respond_to? :call
             LoadedServlets[name] = Thread.current[:webrick_load_servlet]
           end
@@ -23,15 +18,9 @@ class WebApp
           raise "WEBrick servlet is not registered: #{path}"
         end
       end
-      LoadedServlets[name]
+      WEBrick::HTTPServlet::ProcHandler.new(LoadedServlets[name])
     end
-
-    def do_GET(req, res)
-      load_servlet(@name).call(req, res)
-    end
-    alias do_POST do_GET
   end
-
 end
 WEBrick::HTTPServlet::FileHandler.add_handler('webrick',
   WebApp::WEBrickServletHandler)
