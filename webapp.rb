@@ -143,6 +143,10 @@ class WebApp
       @escaped_query_string = escaped_query_string
     end
 
+    def inspect
+      "#<#{self.class}: #{@escaped_query_string}>"
+    end
+
     # decode self as application/x-www-form-urlencoded and returns
     # HTMLFormQuery object.
     def decode_as_application_x_www_form_urlencoded
