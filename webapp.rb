@@ -39,6 +39,7 @@
 require 'stringio'
 require 'forwardable'
 require 'webapp/htmlform'
+require 'htree'
 
 class WebApp
   def initialize(request, response) # :nodoc:
@@ -71,6 +72,7 @@ class WebApp
   def_delegator :@response_header, :add, :add_header
   def_delegator :@response_header, :remove, :remove_header
   def_delegator :@response_header, :clear, :clear_header
+  def_delegator :@response_header, :has?, :has_header?
   def_delegator :@response_header, :[], :get_header
   def_delegator :@response_header, :each, :each_header
 
@@ -249,8 +251,7 @@ class WebApp
         res.header_object.each {|k, v|
           rbx_request.headers_out[k] = v
         }
-        res.body_object.rewind
-        rbx_request.write res.body_object.read
+        rbx_request.write res.body_object.string
       }
       primitive_run(setup_request, output_response)
     end
@@ -269,8 +270,7 @@ class WebApp
           res.header_object.each {|k, v|
             webrick_res[k] = v
           }
-          res.body_object.rewind
-          webrick_res.body = res.body_object.read
+          webrick_res.body = res.body_object.string
         }
         primitive_run(setup_request, output_response)
       }
@@ -285,13 +285,50 @@ class WebApp
         req.body_object.rewind
         webapp = WebApp.new(req, res)
         app = @app_class.new
-        @app_block.call(webapp); next # xxx: avoid core dump [ruby-dev:24228]
+        @app_block.call(webapp); complete_response(res); next # xxx: avoid core dump [ruby-dev:24228]
         #if @app_block
         #  class << app; self end.__send__(:define_method, :webapp_main, &@app_block)
         #end
         #app.webapp_main(webapp)
+        #complete_response(res)
       }
       output_response.call(res)
+    end
+
+    def complete_response(res)
+      unless res.header_object.has? 'Content-Type'
+        media_type = nil
+        charset = nil
+        fallback_media_type = nil
+        case res.body_object.string
+        when /\A#{HTree::Pat::XmlDecl_C}\s*#{HTree::Pat::DocType_C}/io
+          charset = $3 || $4
+          rootelem = $7
+          res.header_object.set 'Content-Type', make_xml_content_type(rootelem, charset)
+        when /\A#{HTree::Pat::XmlDecl_C}\s*<(#{HTree::Pat::Name})[\s>]/io
+          charset = $3 || $4
+          rootelem = $7
+          res.header_object.set 'Content-Type', make_xml_content_type(rootelem, charset)
+        when /\0/
+          res.header_object.set 'Content-Type', 'application/octet-stream'
+        else
+          res.header_object.set 'Content-Type', 'text/plain'
+        end
+      end
+      unless res.header_object.has? 'Content-Length'
+        res.header_object.set 'Content-Length', res.body_object.length.to_s
+      end
+    end
+
+    def make_xml_content_type(rootelem, charset)
+      case rootelem
+      when /\Ahtml\z/
+        result = 'text/html'
+      else
+        result = 'application/xml'
+      end
+      result << "; charset=\"#{charset}\"" if charset
+      result
     end
 
     def trap_exception(req, res)
@@ -454,6 +491,10 @@ class WebApp
       field_name = WebApp.make_frozen_string(field_name)
       remove(field_name)
       add(field_name, field_body)
+    end
+
+    def has?(field_name)
+      @fields.assoc(field_name.downcase) != nil
     end
 
     def [](field_name)

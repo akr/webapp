@@ -45,6 +45,5 @@ WebApp {|webapp|
     q = nil
   end
 
-  webapp.content_type = 'text/html'
   HTree.expand_template(webapp) {Template}
 }

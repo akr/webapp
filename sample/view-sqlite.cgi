@@ -115,8 +115,6 @@ WebApp {|webapp|
     $db_path = $config.fetch('db_path')
   end
 
-  webapp.content_type = 'text/html'
-
   _, command, *args = webapp.path_info.split(%r{/})
   case command
   when nil, ''
