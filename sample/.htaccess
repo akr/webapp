@@ -1,4 +1,4 @@
-Options +ExecCGI
+Options ExecCGI Indexes
 
 DirectoryIndex index.fcgi index.rbx index.cgi
 IndexOptions SuppressDescription SuppressLastModified SuppressSize
