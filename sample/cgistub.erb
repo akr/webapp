@@ -7,7 +7,6 @@ script_abspath = <%= require 'pathname'
                      Pathname.new(ARGV[0]).realpath.to_s.dump %>
 
 script_dir = File.dirname(script_abspath)
-Dir.chdir script_dir
 $:.replace [script_dir] | $:
 $:.delete '.'
 require 'webapp'
