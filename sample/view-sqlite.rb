@@ -115,7 +115,7 @@ WebApp {|request, response|
     $db_path = $config.fetch('db_path')
   end
 
-  response.set_header 'Content-Type', 'text/html'
+  response.content_type = 'text/html'
 
   _, command, *args = request.path_info.split(%r{/})
   case command
