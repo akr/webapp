@@ -2,8 +2,8 @@
 #
 # A web application using webapp has CLI (command line interface).
 # You can invoke a webapp script from command line.
-# There are two modes: client and server.
-# In the client mode, the script processes a request which is specified as
+# There are two modes: offline mode and server mode.
+# In the offline mode, the script processes a request which is specified as
 # a command line arguments.
 # In the server mode, the script works as a HTTP server which provides the web
 # application.
@@ -20,9 +20,9 @@
 #
 #   xxx.cgi server [[hostname:]port]
 #
-# == client mode
+# == offline mode
 #
-# A webapp script should be invoked as follows in the client mode.
+# A webapp script should be invoked as follows in the offline mode.
 # 
 #   xxx.cgi [options] [/path_info] [?query_string]
 #
@@ -148,7 +148,7 @@ class WebApp
         ARGV.shift
         run_cli_server
       else
-        run_cli_client
+        run_cli_offline
       end
     end
 
@@ -190,7 +190,7 @@ class WebApp
       exit 0
     end
 
-    def run_cli_client
+    def run_cli_offline
       opt_output = '-'
       opt_cern_meta = false
       opt_server_name = 'localhost'
