@@ -170,16 +170,22 @@ class WebApp
   # Last-Modified: and If-Modified-Since: header is supported.
   def send_resource(path)
     path = resource_path(path)
+    check_last_modified(path.mtime) {
+      path.open {|f|
+        @response_body << f.read
+      }
+    }
+  end
+
+  def check_last_modified(last_modified)
     if ims = @request_header['If-Modified-Since'] and
        ((ims = Time.httpdate(ims)) rescue nil) and
-       path.mtime <= ims
+       last_modified <= ims
       @response.status_line = '304 Not Modified'
       return
     end
-    path.open {|f|
-      @response_body << f.read
-      @response_header.set 'Last-Modified', f.mtime.httpdate
-    }
+    @response_header.set 'Last-Modified', last_modified.httpdate
+    yield
   end
 
   # call-seq:
