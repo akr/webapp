@@ -7,7 +7,7 @@
 * works uner WEBrick.
   (WEBrick based server must require "webapp/webrick-servlet", though.)
 * path_info aware relative URI generation
-* HTML form parameter varidation by HTML form
+* HTML form parameter varidation by HTML form (sample/query.*)
 
 == How to Install
 
