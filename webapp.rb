@@ -182,6 +182,15 @@ class WebApp
       mtime = path.mtime
     rescue Errno::ENOENT
       @response.status_line = '404 Not Found'
+      HTree.expand_template(@response_body) {<<'End'}
+<html>
+  <head><title>404 Not Found</title></head>
+  <body>
+    <h1>404 Not Found</h1>
+    <p>Resource not found: <span _text="path"/></p>
+  </body>
+</html>
+End
       return
     end
     check_last_modified(path.mtime) {
@@ -605,6 +614,7 @@ class WebApp
 <html><head><title>500 Internal Server Error</title></head>
 <body><h1>500 Internal Server Error</h1>
 <p>The dynamic page you requested is failed to generate.</p></body>
+</html>
 End
     end
 
