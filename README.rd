@@ -6,7 +6,7 @@
 * works under CGI, FastCGI and mod_ruby without modification
 * works under WEBrick
   (WEBrick based server must require "webapp/webrick-servlet", though.)
-* works as usual command (non-interactive, unlike cgi.rb and CGI.pm)
+* works as usual command (CLI)
   xxx.cgi [options] [/path_info] [?query_string]
 * path_info aware relative URI generation
 * HTML form parameter varidation by HTML form (sample/query.cgi)
@@ -14,6 +14,7 @@
 * a web application can be used as a web site with WEBrick
   (URL will be http://host/path_info?query.
   No path component to specify a web application.)
+* a response is gzipped automatically if the browser accepts.
 
 == Home Page
 

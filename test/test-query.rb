@@ -19,7 +19,7 @@ class HTMLFormQueryTest < Test::Unit::TestCase
     req.body_object.rewind
     webapp = WebApp.new(manager, req, res)
     yield webapp
-    manager.complete_response(res)
+    manager.complete_response(webapp, res)
     output_response.call(res)
     response
   end

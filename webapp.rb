@@ -7,8 +7,9 @@
 # * works uner WEBrick.
 #   WEBrick based server must require "webapp/webrick-servlet", though.
 #   link:files/webapp/webrick-servlet_rb.html
-# * works as usual command (non-interactive, unlike cgi.rb and CGI.pm)
-#   xxx.cgi [options] [/path_info] [?query_string]
+# * works as usual command
+#   link:files/webapp/cli_rb.html
+#     xxx.cgi [options] [/path_info] [?query_string]
 # * path_info aware relative URI generation.
 # * HTML form parameter varidation by HTML form. (sample/query.cgi)
 # * automatic Content-Type generation.
@@ -16,7 +17,7 @@
 #   (URL will be http://host/path_info?query.
 #   No path component to specify a web application.)
 #   link:files/webapp/webrick-servlet_rb.html
-# * the response is gzipped automatically if the browser accepts.
+# * a response is gzipped automatically if the browser accepts.
 #
 # == Example
 #
@@ -24,7 +25,7 @@
 # without any modification.
 # It also works as WEBrick servlet (*.webrick) if the WEBrick based server
 # requires "webapp/webapp/webrick-servlet".
-# It also works as usual ruby script.
+# It also works as usual command line.
 #
 #   #!/path/to/ruby
 #
@@ -52,31 +53,6 @@
 #       webapp.puts "#{k}: #{v}"
 #     }
 #   }
-#
-# You can invoke the script from command line as follows.
-# The optional first argument is path info.
-# The optional second argument is query string.
-#   
-#   % ruby tst.cgi /path/info query=string
-#   Status: 200 OK
-#   Content-Type: text/plain
-#   Content-Length: 319
-#   
-#   current time: Mon Dec 20 19:46:03 JST 2004
-#   pid: 11170
-#   self: main
-#   
-#   request_method: GET
-#   server_name: localhost
-#   server_port: 80
-#   script_name: /tst.cgi
-#   path_info: /path/info
-#   query_string: #<WebApp::QueryString: query=string>
-#   server_protocol: HTTP/1.0
-#   remote_addr: 127.0.0.1
-#   content_type: text/plain
-#   
-#   --- request headers ---
 #
 # == recommended directory layout for web application
 #
