@@ -1,6 +1,21 @@
 # = webapp.rb - unified web application interface for CGI, FastCGI mod_ruby and WEBrick.
 #
-# == example
+# == Features
+#
+# * very easy-to-use API.
+# * works under CGI, FastCGI and mod_ruby without modification.
+# * works uner WEBrick.
+#   WEBrick based server must require "webapp/webrick-servlet", though.
+#   link:files/webapp/webrick-servlet_rb.html
+# * path_info aware relative URI generation.
+# * HTML form parameter varidation by HTML form. (sample/query.cgi)
+# * automatic Content-Type generation.
+# * a web application can be used as a web site with WEBrick.
+#   (URL will be http://host/path_info?query.
+#   No path component to specify a web application.)
+#   link:files/webapp/webrick-servlet_rb.html
+#
+# == Example
 #
 # Following script works as CGI(*.cgi), FastCGI(*.fcgi) and mod_ruby(*.rbx)
 # without any modification.

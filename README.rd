@@ -9,6 +9,9 @@
 * path_info aware relative URI generation
 * HTML form parameter varidation by HTML form (sample/query.cgi)
 * automatic Content-Type generation
+* a web application can be used as a web site with WEBrick
+  (URL will be http://host/path_info?query.
+  No path component to specify a web application.)
 
 == Home Page
 
@@ -51,8 +54,8 @@ In this case, the script filename should be "hello.webrick".
 
 == TODO
 
-* session support
 * file upload (multipart/form-data) support
+* session support
 * customizable cookie support
 
 == Requirements
