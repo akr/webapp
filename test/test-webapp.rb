@@ -74,4 +74,12 @@ class WebApPTest < Test::Unit::TestCase
     f.call('text/html', '<html></html>')
     f.call('text/html; charset="euc-jp"', '<?xml version="1.0" encoding="euc-jp"?><html>')
   end
+
+  def test_resource_path
+    webapp_test('GET', 'http://host/script.cgi') {|webapp|
+      assert_raise(ArgumentError) { webapp.resource_path('/etc/passwd') }
+      assert_raise(ArgumentError) { webapp.resource_path('../../etc/passwd') }
+    }
+  end
+
 end

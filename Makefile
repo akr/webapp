@@ -14,7 +14,7 @@ install:
 
 .PHONY: check test all install
 
-RB = webapp.rb
+RB = webapp.rb $(wildcard webapp/*.rb) 
 doc/index.html: $(RB)
 	rm -rf doc
 	rdoc $(RB)

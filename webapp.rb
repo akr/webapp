@@ -45,7 +45,7 @@
 # * PROJECT/TEMPLATE.html       HTree template
 # * PROJECT/PROJECT.rb          library entry file
 # * PROJECT/PROJECT/SUBLIB.rb   library component
-# * PROJECT/bin/SCRIPT          runnable script
+# * PROJECT/bin/COMMAND         runnable command
 # * PROJECT/cgistub.erb         stub template
 # * PROJECT/Makefile            stub generator
 # * PROJECT/test-all.rb         test runner
@@ -124,7 +124,12 @@ class WebApp
   # If /home/user/public_html/foo/bar.cgi is a web application which
   # WebApp {} calls, webapp.resource_path("baz") returns a pathname points to
   # /home/user/public_html/foo/baz.
-  def resource_path(path)
+  def resource_path(arg)
+    path = Pathname.new(arg)
+    raise ArgumentError, "absolute path: #{arg.inspect}" if !path.relative?
+    path.each_filename {|f|
+      raise ArgumentError, "path contains .. : #{arg.inspect}" if f == '..'
+    }
     @manager.resource_basedir + path
   end
 
@@ -193,6 +198,7 @@ class WebApp
     @urigen.make_absolute_uri(hash)
   end
 
+  # :stopdoc:
   StatusMessage = { # RFC 2616
     100 => 'Continue',
     101 => 'Switching Protocols',
@@ -235,6 +241,7 @@ class WebApp
     504 => 'Gateway Timeout',
     505 => 'HTTP Version Not Supported',
   }
+  # :startdoc:
 
   # setup_redirect makes a status line and a Location header appropriate as
   # redirection.
@@ -546,6 +553,18 @@ end
 
 # WebApp is a main routine of web application.
 # It should be called from a toplevel of a CGI/FastCGI/mod_ruby/WEBrick script.
+#
+# WebApp is used as follows.
+#
+#   #!/usr/bin/env ruby
+#   
+#   require 'webapp'
+#   
+#   ... class/method definitions ... # run once per process.
+#   
+#   WebApp {|webapp| # This block runs once per request.
+#     ... process a request ...
+#   }
 #
 # WebApp yields with an object of the class WebApp.
 # The object contains request and response.

@@ -73,6 +73,7 @@ class WebApp
     end
   end
 
+  # :stopdoc:
   class HTMLFormValidator
     def initialize(form, form_id=nil)
       form_tree = extract_html_form_tree(form, form_id)
@@ -449,6 +450,6 @@ class WebApp
           "unexpected form control element: #{control[:elem].inspect}"
       end
     end
-
   end
+  # :startdoc:
 end

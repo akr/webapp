@@ -8,6 +8,5 @@ script_abspath = <%= require 'pathname'
 
 script_dir = File.dirname(script_abspath)
 $:.replace [script_dir] | $:
-$:.delete '.'
 require 'webapp'
 WebApp.run_webapp_via_stub(script_abspath)
