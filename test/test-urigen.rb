@@ -48,6 +48,11 @@ class URIGenTest < Test::Unit::TestCase
       WebApp::URIGen.new('http', "host", 80, "/foo.cgi", '/bar').make_relative_uri({:path_info=>"a:b"}).to_s)
   end
 
+  def test_reluri_slash
+    assert_equal(".//a", 
+      WebApp::URIGen.new('http', "host", 80, "/foo.cgi", '/bar').make_relative_uri({:path_info=>"//a"}).to_s)
+  end
+
   def check_absuri(expected, hash)
     requri = WebApp::URIGen.new('http', "host", 80, "/foo/bar.cgi", "/baz/qux")
     assert_equal(expected, requri.make_absolute_uri(hash).to_s)
