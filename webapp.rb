@@ -681,6 +681,7 @@ end
 # WEBAPP_DEVELOP_HOST.
 # It may be an IP address such as "111.222.333.444" or
 # an network address such as "111.222.333.0/24".
+# (An environment variable for CGI can be set by SetEnv directive in Apache.)
 #
 def WebApp(&block) # :yields: webapp
   $SAFE = 1 if $SAFE < 1
