@@ -1,0 +1,16 @@
+Options +ExecCGI
+
+DirectoryIndex index.cgi
+IndexOptions SuppressDescription SuppressLastModified SuppressSize
+
+Order Deny,Allow
+Deny from All
+
+<FilesMatch "\.(cgi|fcgi|rbx)$">
+Allow from All
+</FilesMatch>
+
+# following section enables indexing.
+<FilesMatch "^$">
+Allow from All
+</FilesMatch>
