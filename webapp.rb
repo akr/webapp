@@ -118,24 +118,31 @@ class WebApp
     @requri.make_relative_uri(hash)
   end
 
-  def query_html_application_x_www_form_urlencoded_get
-    HTMLFormQuery.decode_x_www_form_urlencoded(@request.query_string)
+  def query_html_get_application_x_www_form_urlencoded
+    @request.query_string.decode_as_application_x_www_form_urlencoded
   end
 
-  def query_html_application_x_www_form_urlencoded_post
-    if /\Apost\z/i =~ @request.request_method
-      HTMLFormQuery.decode_x_www_form_urlencoded(@request.body_object.read)
+  def query_html_post_application_x_www_form_urlencoded
+    if /\Apost\z/i =~ @request.request_method # xxx: should be checkless?
+      QueryString.new(@request.body_object.read).decode_as_application_x_www_form_urlencoded
     else
       # xxx: warning?
       HTMLFormQuery.new
     end
   end
 
-  class HTMLFormQuery
-    def HTMLFormQuery.decode_x_www_form_urlencoded(encoded_string)
-      # xxx: warning if invalid format?
+  # QueryString represents a query component of URI.
+  class QueryString
+    def initialize(escaped_query_string)
+      @escaped_query_string = escaped_query_string
+    end
+
+    # decode self as application/x-www-form-urlencoded and returns
+    # HTMLFormQuery object.
+    def decode_as_application_x_www_form_urlencoded
+      # xxx: warning if invalid?
       pairs = []
-      encoded_string.scan(/([^&;=]*)=([^&;]*)/) {|key, val|
+      @escaped_query_string.scan(/([^&;=]*)=([^&;]*)/) {|key, val|
         key.gsub!(/\+/, ' ')
         key.gsub!(/%([0-9A-F][0-9A-F])/i) { [$1].pack("H*") }
         val.gsub!(/\+/, ' ')
@@ -144,7 +151,10 @@ class WebApp
       }
       HTMLFormQuery.new(pairs)
     end
+  end
 
+  # HTMLFormQuery represents a query submitted by HTML form. 
+  class HTMLFormQuery
     def HTMLFormQuery.each_string_key_pair(arg, &block) # :nodoc:
       if arg.respond_to? :to_ary
         arg = arg.to_ary
@@ -501,7 +511,7 @@ class WebApp
       @server_port = env['SERVER_PORT'].to_i
       @script_name = env['SCRIPT_NAME'] || ''
       @path_info = env['PATH_INFO'] || ''
-      @query_string = env['QUERY_STRING'] || ''
+      @query_string = QueryString.new(env['QUERY_STRING'] || '')
       @server_protocol = env['SERVER_PROTOCOL'] || ''
       @remote_addr = env['REMOTE_ADDR'] || ''
       @content_type = env['CONTENT_TYPE'] || ''
