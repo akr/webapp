@@ -101,6 +101,7 @@ class WebApp
     @response = response
     @response_header = response.header_object
     @response_body = response.body_object
+    @response_charset = nil
     @urigen = URIGen.new('http', # xxx: https?
       @request.server_name, @request.server_port,
       @request.script_name, @request.path_info)
@@ -112,6 +113,8 @@ class WebApp
   def putc(ch) @response_body.putc ch end
   def puts(*strs) @response_body.puts(*strs) end
   def write(str) @response_body.write str end
+  def charset=(cs) @response_charset = cs end
+  def charset() @response_charset end
 
   def each_request_header(&block) # :yields: field_name, field_body
     @request_header.each(&block)

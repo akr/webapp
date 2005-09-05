@@ -135,15 +135,16 @@ class WebApp
         when /\A\211PNG\r\n\032\n/
           content_type = 'image/png'
         when /\A#{HTree::Pat::XmlDecl_C}\s*#{HTree::Pat::DocType_C}/io
-          charset = $3 || $4
+          charset = $3 || $4 || webapp.charset
           rootelem = $7
           content_type = make_xml_content_type(rootelem, charset)
         when /\A#{HTree::Pat::XmlDecl_C}\s*<(#{HTree::Pat::Name})[\s>]/io
-          charset = $3 || $4
+          charset = $3 || $4 || webapp.charset
           rootelem = $7
           content_type = make_xml_content_type(rootelem, charset)
         when /\A<html[\s>]/io
-          content_type = 'text/html'
+          charset = webapp.charset
+          content_type = make_xml_content_type('html', charset)
         when /\0/
           content_type = 'application/octet-stream'
         else
