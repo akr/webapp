@@ -95,7 +95,7 @@ class WebApp
           raise ArgumentError, "unexpected query: #{query.inspect}"
         end
         unless query.empty?
-          query = '?' + uric_escape(query)
+          query = '?' + query
         end
       else
         query = ''

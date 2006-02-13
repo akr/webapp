@@ -32,6 +32,7 @@ class URIGenTest < Test::Unit::TestCase
     check_reluri_2("bar.cgi?a=b", :query=>{'a'=>'b'})
     check_reluri_2("bar.cgi?a=b;a=c", :query=>{'a'=>['b','c']})
     check_reluri_2("bar.cgi?a+b=c+d", :query=>{'a b'=>'c d'})
+    check_reluri_2("bar.cgi?a=%3A", :query=>{'a'=>':'})
   end
 
   def test_reluri_unexpected
