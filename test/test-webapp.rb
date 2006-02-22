@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'webapp'
 
-class WebApPTest < Test::Unit::TestCase
+class WebAppTest < Test::Unit::TestCase
   def unescape(s)
     s.gsub(/%([0-9a-f][0-9a-f])/i) { [$1].pack("H2") }
   end
