@@ -32,7 +32,8 @@ class URIGenTest < Test::Unit::TestCase
     check_reluri_2("bar.cgi?a=b", :query=>{'a'=>'b'})
     check_reluri_2("bar.cgi?a=b;a=c", :query=>{'a'=>['b','c']})
     check_reluri_2("bar.cgi?a+b=c+d", :query=>{'a b'=>'c d'})
-    check_reluri_2("bar.cgi?a=%3A", :query=>{'a'=>':'})
+    check_reluri_2("bar.cgi?a=:", :query=>{'a'=>':'})
+    check_reluri_2("bar.cgi?a=%2B", :query=>{'a'=>'+'})
   end
 
   def test_reluri_unexpected
@@ -63,4 +64,57 @@ class URIGenTest < Test::Unit::TestCase
     check_absuri("http://host/foo/bar.cgi", {})
     check_absuri("http://host/foo/bar.cgi/hoge", :path_info=>"/hoge")
   end
+
+  def fragment_escape(s)
+    WebApp::URIGen.allocate.fragment_escape(s)
+  end
+
+  def form_key_value_escape(s)
+    WebApp::URIGen.allocate.form_key_value_escape(s)
+  end
+
+  DEFTEST_COUNT = Hash.new(0)
+
+  def self.deftest_fragment_escape(*srcs)
+    srcs.each {|src|
+      define_method("test_fragment_escape_#{DEFTEST_COUNT['fragment_escape'] += 1}") {
+        assert_equal("%" + sprintf("%02X", src[0]), fragment_escape(src))
+      }
+    }
+  end
+  def self.deftest_fragment_no_escape(*srcs)
+    srcs.each {|src|
+      define_method("test_fragment_no_escape_#{DEFTEST_COUNT['fragment_no_escape'] += 1}") {
+        assert_equal(src, fragment_escape(src))
+      }
+    }
+  end
+
+  deftest_fragment_escape(
+    "\0", " ", "\"", "#", "%", "<", ">", "[", "\\", "]", "^", "`", "{", "|", "}", "\x7f", "\x80")
+  deftest_fragment_no_escape(
+    "!", "$", "&", "'", "(", ")", "*", "+", ",", "-", ".", "/", "0", ":", ";", "=", "?", "@", "A", "_", "a", "~") 
+
+  def self.deftest_form_key_value_escape(*srcs)
+    srcs.each {|src|
+      define_method("test_form_key_value_escape_#{DEFTEST_COUNT['form_key_value_escape'] += 1}") {
+        assert_equal("%" + sprintf("%02X", src[0]), form_key_value_escape(src))
+      }
+    }
+  end
+  def self.deftest_form_no_escape(*srcs)
+    srcs.each {|src|
+      define_method("test_form_no_escape_#{DEFTEST_COUNT['form_no_escape'] += 1}") {
+        assert_equal(src, form_key_value_escape(src))
+      }
+    }
+  end
+
+  def test_form_key_value_escape_space
+    assert_equal("+", form_key_value_escape(" "))
+  end
+  deftest_form_key_value_escape(
+    "&", "+", ";", "=", "\0", "\"", "#", "%", "<", ">", "[", "\\", "]", "^", "`", "{", "|", "}", "\x7f", "\x80")
+  deftest_form_no_escape(
+    "!", "$", "'", "(", ")", "*", ",", "-", ".", "/", "0", ":", "?", "@", "A", "_", "a", "~") 
 end

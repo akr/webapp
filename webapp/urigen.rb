@@ -79,13 +79,13 @@ class WebApp
           query = query.map {|k, v|
             case v
             when String
-              "#{form_escape(k)}=#{form_escape(v)}"
+              "#{form_key_value_escape(k)}=#{form_key_value_escape(v)}"
             when Array
               v.map {|e|
                 unless String === e
                   raise ArgumentError, "unexpected query value: #{e.inspect}"
                 end
-                "#{form_escape(k)}=#{form_escape(e)}"
+                "#{form_key_value_escape(k)}=#{form_key_value_escape(e)}"
               }
             else
               raise ArgumentError, "unexpected query value: #{v.inspect}"
@@ -102,7 +102,7 @@ class WebApp
       end
 
       if fragment
-        fragment = "#" + uric_escape(fragment)
+        fragment = "#" + fragment_escape(fragment)
       else
         fragment = ''
       end
@@ -114,8 +114,29 @@ class WebApp
       @base_uri + make_relative_uri(hash)
     end
 
+    # RFC 3986
     Alpha = 'a-zA-Z'
     Digit = '0-9'
+    UnreservedChars = Alpha + Digit + '\-._~'
+    SubDelimChars = '!$&\'()*+,;='
+    PChars = UnreservedChars + SubDelimChars + ":@"
+    FragmentChars = PChars + "/?"
+    def fragment_escape(s)
+      s.gsub(/[^#{FragmentChars}]/on) {|c| sprintf("%%%02X", c[0]) }
+    end
+
+    QueryChars = PChars + "/?"
+
+    # [;&=+] is used for delimiter of application/x-www-form-urlencoded.
+    FormKeyValueChars = QueryChars.gsub(/[;&=+]/, '') + ' '
+    def form_key_value_escape(s)
+      s.gsub(/[^#{FormKeyValueChars}]/on) {|c|
+        sprintf("%%%02X", c[0])
+      }.gsub(/ /on, '+')
+    end
+    #
+
+    # RFC 2396
     AlphaNum = Alpha + Digit
     Mark = '\-_.!~*\'()'
     Unreserved = AlphaNum + Mark
@@ -124,17 +145,6 @@ class WebApp
       s.gsub(/[^#{PChar}]/on) {|c| sprintf("%%%02X", c[0]) }
     end
 
-    Reserved = ';/?:@&=+$,'
-    Uric = Reserved + Unreserved
-    def uric_escape(s)
-      s.gsub(/[^#{Uric}]/on) {|c| sprintf("%%%02X", c[0]) }
-    end
-
-    def form_escape(s)
-      s.gsub(/[#{Reserved}\x00-\x1f\x7f-\xff]/on) {|c|
-        sprintf("%%%02X", c[0])
-      }.gsub(/ /on) { '+' }
-    end
   end
   # :startdoc:
 end
