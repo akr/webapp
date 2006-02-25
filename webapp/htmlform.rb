@@ -1,4 +1,5 @@
 require 'htree'
+require 'webapp/querystring'
 
 class WebApp
   class QueryString

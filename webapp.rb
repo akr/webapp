@@ -91,6 +91,7 @@ require 'time'
 require 'webapp/manager'
 require 'webapp/urigen'
 require 'webapp/htmlform'
+require 'webapp/querystring'
 
 class WebApp
   def initialize(manager, request, response) # :nodoc:
@@ -382,23 +383,6 @@ End
   end
   def validate_html_query(form, form_id=nil)
     HTMLFormValidator.new(form, form_id).validate(self)
-  end
-
-  # QueryString represents a query component of URI.
-  class QueryString
-    class << self
-      alias primitive_new_for_raw_query_string new
-      undef new
-    end
-
-    def initialize(escaped_query_string)
-      @escaped_query_string = escaped_query_string
-    end
-
-    def inspect
-      "#<#{self.class}: #{@escaped_query_string}>"
-    end
-    alias to_s inspect
   end
 
   # :stopdoc:
