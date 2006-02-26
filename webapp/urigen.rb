@@ -11,6 +11,7 @@ class WebApp
       @path_info = path_info
       uri = "#{scheme}://#{server_name}:#{server_port}"
       uri << script_name.gsub(%r{[^/]+}) {|segment| pchar_escape(segment) }
+      # xxx: path_info may begin with a non-slash character.
       uri << path_info.gsub(%r{[^/]+}) {|segment| pchar_escape(segment) }
       @base_uri = URI.parse(uri)
     end
