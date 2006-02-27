@@ -133,6 +133,8 @@ class WebApp
                 :server_protocol,
                 :remote_addr, :content_type
 
+    attr_reader :scheme
+
     def make_request_header_from_cgi_env(env)
       env.each {|k, v|
         next if /\AHTTP_/ !~ k
@@ -150,8 +152,13 @@ class WebApp
       @remote_addr = env['REMOTE_ADDR'] || ''
       @content_type = env['CONTENT_TYPE'] || ''
 
+      @scheme = 'http'
+
       # non-standard:
       @request_uri = env['REQUEST_URI'] # Apache
+      if env['HTTPS'] and /on/i =~ env['HTTPS'] # Apache
+        @scheme = 'https'
+      end
     end
   end
 

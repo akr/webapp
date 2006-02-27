@@ -103,7 +103,7 @@ class WebApp
     @response_header = response.header_object
     @response_body = response.body_object
     @response_charset = nil
-    @urigen = URIGen.new('http', # xxx: https?
+    @urigen = URIGen.new(@request.scheme,
       @request.server_name, @request.server_port,
       @request.script_name, @request.path_info)
   end
