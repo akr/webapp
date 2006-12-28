@@ -92,7 +92,7 @@ The script also works as a standalone http server.
 
 == License
 
-Ruby's
+The modified BSD license
 
 == Author
 Tanaka Akira <akr@m17n.org>
