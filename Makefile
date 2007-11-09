@@ -1,10 +1,6 @@
 RUBY=ruby
-RD2HTML=rd2 -r rd/rd2html-lib.rb
 
-all: README.html doc/index.html
-
-README.html: README.rd
-	$(RD2HTML) --html-title='webapp - easy-to-use CGI/FastCGI/mod_ruby interface' -o README README.rd
+all: rdoc/index.html
 
 check test:
 	$(RUBY) -I. test-all.rb
@@ -15,7 +11,7 @@ install:
 .PHONY: check test all install
 
 RB = webapp.rb $(wildcard webapp/*.rb) 
-doc/index.html: $(RB)
-	rm -rf doc
-	rdoc $(RB)
+rdoc/index.html: $(RB)
+	rm -rf rdoc
+	rdoc --op rdoc $(RB)
 
